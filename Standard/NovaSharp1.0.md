@@ -1,6 +1,6 @@
 # NovaSharp 1.0 语言标准
 
-NovaSharp 是一种同时支持面向对象和函数式编程的编程语言。
+NovaSharp 是一门不依赖于运行时的、同时支持面向对象与函数式范式的编程语言。
 
 ## 命名规范
 
@@ -20,7 +20,7 @@ NovaSharp 源码文件扩展名固定为 `.ns`。
 | 泛型            | TPascalCase | `T`（更为常用），`TItem`（包含 T 前缀） |
 
 > [!TIP]
-> 命名规范中提到的**局部变量**是指**在函数内部定义的变量**或者**对象的私有字段**。
+> 命名规范中提到的**局部变量**是指**在函数内部定义的变量**或者**带有 `public`、`penetrate`、`internal` 可访问性修饰符的字段**。
 
 为了提高代码可读性与可维护性，我们**不推荐**在命名时采用**缩写**或者**没有意义的名称**，也不推荐采用**拼音**作为变量名。
 
@@ -56,13 +56,13 @@ int a;
 - **局部作用域**：在函数内部定义的标识符，只能在该函数内部访问。
 - **块级作用域**：在代码块 `{}` 内部定义的标识符，只能在该代码块内部访问。
 
-#### 作用域优先级
+#### 作用域层级
 
-在 NovaSharp 中，作用域的优先级从高到低依次为：
+在 NovaSharp 中，作用域的层级从内到外依次为：
 
-1. **块级作用域**：代码块 `{}` 内部的变量优先级最高。
-2. **局部作用域**：函数内部定义的变量优先级次之。
-3. **全局作用域**：整个程序中定义的全局变量优先级最低。
+1. **块级作用域**
+2. **局部作用域**
+3. **全局作用域**
 
 ### 注释
 
@@ -71,16 +71,20 @@ NovaSharp 中的注释分为单行注释和多行注释两种形式。
 - 单行注释以 `//` 开头，直到行末结束。
 - 多行注释以 `/*` 开始，以 `*/` 结束，可以跨越多行。
 
-### 变量声明
+### 变量
+
+变量是用于存储指定类型数据的空间，可以在程序中被引用和修改。
+
+#### 变量声明
 
 NovaSharp 中的变量声明分为**显式类型声明**和**隐式类型推断**两种方式。
 
 变量声明语句采用 `[<修饰符1>, <修饰符2>, ...] <类型> <变量1名称> [= <变量1初始值>] [, <变量2名称> [= <变量2初始值>], ...]` 的形式。对于隐式类型推断，其 `<类型>` 为 `var`，且**必须提供初始值**，编译器会根据初始值的类型进行推断。样例如下：
 
 ```novasharp
-int explicitType1 = 1, explicitType2;  // 显式类型声明，前者已初始化为 1，后者默认为 0
-var implicitType = 'a';  // 隐式类型推断（此处编译器推断为 char）
-public int PublicProperty;  // 带修饰符的类型声明
+int explicitType1 = 1, explicitType2; // 显式类型声明，前者已初始化为 1，后者默认为 0
+var implicitType = 'a'; // 隐式类型推断（此处编译器推断为 char）
+public int PublicProperty; // 带修饰符的类型声明
 ```
 
 > [!IMPORTANT]
@@ -98,14 +102,14 @@ class MyClass
     void MyFunction()
     {
         int x = 20;
-        Console.WriteLine(x);  // 输出: 20
+        Console.WriteLine(x); // 输出: 20
     }
 }
 ```
 
-此时，NovaSharp 会优先使用所在作用域优先级大的同名变量 `x`，因此输出为 `20`。
+此时，NovaSharp 会优先使用内层作用域的同名变量 `x`，因此输出为 `20`。
 
-在类与结构体中，若想越过变量覆盖而访问实例中的同名变量，可以使用 `this` 关键字。例如：
+在类或结构体内部，若需访问被同名局部变量覆盖的字段，可使用 `this` 关键字。例如：
 
 ```novasharp
 class MyClass
@@ -115,47 +119,62 @@ class MyClass
     void MyFunction()
     {
         int x = 20;
-        Console.WriteLine(this.x);  // 输出: 10
+        Console.WriteLine(this.x); // 输出: 10
     }
 }
 ```
 
-具体来说，`this` 关键字用于引用当前实例的成员，能够有效避免因变量覆盖而导致的歧义。详见[对象的非静态子函数](#对象的非静态子函数)。
+具体来说，`this` 关键字用于引用当前实例的成员，能够有效避免因变量覆盖而导致的歧义。详见[实例方法的隐式 this](#实例方法的隐式-this)。
+
+#### 变量销毁
+
+在 NovaSharp 中，当变量离开作用域后，会自动销毁变量。
+
+变量的销毁并不一定伴随着内存的释放，详见[内存管理](#内存管理)。
+
+如要手动销毁变量，可以使用 `delete` 语句。格式如下：
+
+```novasharp
+delete <变量名>;
+```
+
+例如：
+
+```novasharp
+int a = 10;
+remove a;   // 销毁变量 a
+```
 
 ### 类型、基本类型与可空类型
 
 NovaSharp 中的类型分为如下几类：
 
-- 基本类型：包括 `int`、`float`、`double`、`char`、`bool`、数组**等**。
+- 基本类型：包括 `int`、`float`、`double`、`char`、`bool`、数组等。
 - 复合类型：包括结构体、类、接口。
 - 引用类型：包括指针、委托。
 
 完整的基本类型表格如下：
 
-| 类型     | 解释                        |
-| -------- | --------------------------- |
-| `short`  | 2 字节整数                  |
-| `ushort` | 2 字节**无符号**整数        |
-| `int`    | 4 字节整数                  |
-| `uint`   | 4 字节**无符号**整数        |
-| `long`   | 8 字节整数                  |
-| `ulong`  | 8 字节**无符号**整数        |
-| `huge`   | 16 字节整数                 |
-| `uhuge`  | 16 字节**无符号**整数       |
-| `float`  | 4 字节浮点数                |
-| `double` | 8 字节浮点数                |
-| `char`   | 2 字节字符                  |
-| `string` | 字符串                      |
-| `bool`   | 1 字节布尔                  |
-| `[]`     | 数组                        |
-| `object` | 对象 (所有的类型均派生于此) |
-| `void`   | 空类型                      |
+| 类型     | 解释                        | 默认值 |
+| -------- | --------------------------- | ------ |
+| `short`  | 2 字节整数                  | 0      |
+| `ushort` | 2 字节**无符号**整数        | 0      |
+| `int`    | 4 字节整数                  | 0      |
+| `uint`   | 4 字节**无符号**整数        | 0      |
+| `long`   | 8 字节整数                  | 0      |
+| `ulong`  | 8 字节**无符号**整数        | 0      |
+| `float`  | 4 字节浮点数                | 0.0    |
+| `double` | 8 字节浮点数                | 0.0    |
+| `char`   | 2 字节字符                  | '\0'   |
+| `string` | 字符串                      | ""     |
+| `bool`   | 1 字节布尔                  | false  |
+| `[]`     | 数组                        | {}     |
+| `object` | 对象 (所有的类型均派生于此) | null   |
+| `void`   | 空类型                      | /      |
 
 #### 整数、无符号整数与浮点数
 
 整数类型用于表示整数值，包括有符号和无符号两种。浮点数类型用于表示带有小数部分的数值。
-
-整数、无符号整数与浮点数默认为 0。
 
 整数、无符号整数与浮点数类型提供如下方法：
 
@@ -168,11 +187,17 @@ NovaSharp 中的类型分为如下几类：
 > [!NOTE]
 > 以上表格中，占位符 `T` 不是泛型占位符，它将被替换为对应的整数、无符号整数与浮点数类型。
 
+允许整数与整数之间、无符号整数与无符号整数之间、浮点数与浮点数之间进行隐式转换。
+
+> [!CAUTION]
+> 不同类型之间的隐式转换可能会导致精度丢失，因此在进行隐式转换时需要谨慎。
+
 #### 数组
 
-数组是同一类型元素的集合，可以通过索引访问每个元素。数组的大小**在创建时确定**，不能动态改变。其索引**从 0 开始**。
+数组是同一类型元素的集合，本质上是一块连续的内存区域，可以通过索引访问每个元素。数组的大小**在创建时确定**，不能动态改变。其索引**从 0 开始**。
 
-数组本质上是**一块连续的内存区域**的**指针**，允许通过偏移量（索引）来访问每个元素。
+> [!NOTE]
+> 与 C++ 不同，NovaSharp 的数组不是一个指针。
 
 创建数组实例的方式有如下两种：
 
@@ -184,12 +209,12 @@ NovaSharp 中的类型分为如下几类：
 数组声明语句采用 `[<修饰符1>, <修饰符2>, ...] <类型>[] <变量名> [= <初始值>]` 的形式。样例如下：
 
 ```novasharp
-int[] numbers;  // 声明一个整型数组
-int[] numbers = new int[10];  // 声明并初始化一个整型数组
-int[] numbers = { 1, 2, 3, 4, 5 };  // 使用数组表达式初始化一个大小为 5 的数组
+int[] numbers; // 声明一个整型数组
+int[] numbers = new int[10]; // 声明并初始化一个整型数组
+int[] numbers = { 1, 2, 3, 4, 5 }; // 使用数组表达式初始化一个大小为 5 的数组
 ```
 
-一个数组包含以下属性
+一个数组包含以下字段
 
 - `Length`：（`int`, `readonly`）获取数组中元素的数量。
 
@@ -204,7 +229,7 @@ char letter = 'A';
 字符串是用于表示文本数据的类型。在 NovaSharp 中，字符串的长度是不可变的，这意味着一旦创建，就无法修改其长度。字符串可以通过字面量创建，使用双引号 `"` 来表示，并提供一个索引器来访问字符串中的字符。例如：
 
 ```novasharp
-string greeting = "Hello, World!";
+string text = "Hello, World" ;
 ```
 
 字符串的基本操作包括：
@@ -217,10 +242,12 @@ string greeting = "Hello, World!";
 ```novasharp
 string firstName = "John";
 string lastName = "Doe";
-string fullName = firstName + " " + lastName;   // "John Doe"
+string fullName = firstName + " " + lastName; // "John Doe"
 
 char dot = '·';
-string dottedName = firstName + dot + lastName;   // "John·Doe"
+string dottedName = firstName + dot + lastName; // "John·Doe"
+
+string message = $"Hello, {dottedName}!";
 ```
 
 字符串提供一个构造函数用于创建一个指定大小的、用特定字符填充的空字符串，其定义如下：
@@ -229,14 +256,12 @@ string dottedName = firstName + dot + lastName;   // "John·Doe"
 public string(int size, char target = ' ');
 ```
 
-字符串有如下属性和方法：
+字符串有如下字段和方法：
 
 | 定义                                                             | 作用                                           |
 | ---------------------------------------------------------------- | ---------------------------------------------- |
 | `int Length`                                                     | 获取字符串的长度                               |
-| `public void Upper()`                                            | 将字符串转换为大写形式并修改原字符串。         |
 | `public string ToUpper()`                                        | 将字符串复制并转换为大写形式作为返回值。       |
-| `public void Lower()`                                            | 将字符串转换为小写形式并修改原字符串。         |
 | `public string ToLower()`                                        | 将字符串复制并转换为小写形式作为返回值。       |
 | `public string Substring(int length)`                            | 返回从头开始的、指定长度的子字符串。           |
 | `public string Substring(int start, int end)`                    | 返回从指定位置开始到结束位置的子字符串。       |
@@ -282,13 +307,13 @@ string path = "C:\\Program Files\\MyApp";
 在 NovaSharp 中，可以使用 `$` 符号和大括号 `{}` 来插入变量值，大括号中的内容会被隐式转换为字符串。例如：
 
 ```novasharp
-string greeting = $"Hello, {fullName}! I'm {age} years old.";   // 此处 age 被隐式转换为字符串
+string greeting = $"Hello, {fullName}! I'm {age} years old."; // 此处 age 被隐式转换为字符串
 ```
 
 如需在带 `$` 符号的字符串中使用大括号，可以使用双大括号 `{{` 和 `}}` 来转义。例如：
 
 ```novasharp
-string message = $"Hello, {{user}}!";   // 输出: Hello, {user}!
+string message = $"Hello, {{user}}!"; // 输出: Hello, {user}!
 ```
 
 #### 富文本字符串
@@ -311,13 +336,13 @@ string richText = """
 元组的定义与初始化示例：
 
 ```novasharp
-(string, int) person = ("Alice", 30);  // 显式声明类型
+(string, int) person = ("Alice", 30); // 显式声明类型
 (string Name, int Age) person = ("Alice", 30);
-var info = ("Bob", 25, true);          // 隐式类型推断
+var info = ("Bob", 25, true); // 隐式类型推断
 var info = (Name: "Bob", Age: 25, IsStudent: true);
 ```
 
-元组中未声明类型名的元素可通过 `.Item1`、`.Item2` 等属性访问，属性名按元素顺序自动生成。例如：
+元组中未声明类型名的元素可通过 `.Item1`、`.Item2` 等字段访问，字段名按元素顺序自动生成。例如：
 
 ```novasharp
 var info = ("Bob", 25, true);
@@ -353,7 +378,7 @@ Console.WriteLine(nested.Info.Score); // 输出: 95
 要声明一个可空类型，可以在类型后面使用 `?` 后缀。例如：
 
 ```novasharp
-int? nullableInt = null;         // 可空整型
+int? nullableInt = null; // 可空整型
 ```
 
 #### 类型转换
@@ -366,7 +391,7 @@ NovaSharp 中的类型转换分为隐式转换和显式转换。
 
   ```novasharp
   float f = 3.14f;
-  int i = f;  // 隐式转换，将 float 转换为 int，此时 i 的值为 3
+  double i = f; // 隐式转换，将 float 转换为 double，此时 i 的值为 3.14
   ```
 
 - **显式转换**：需要使用转换操作符进行的类型转换。例如，将 `float` 类型的值转换为 `int` 类型时，需要使用 `(int)` 进行显式转换。
@@ -375,7 +400,7 @@ NovaSharp 中的类型转换分为隐式转换和显式转换。
 
   ```novasharp
   float f = 3.14f;
-  int i = (int)f;  // 显式转换，指定将 float 转换为 int，精度截断，此时 i 的值为 3
+  int i = (int)f; // 显式转换，指定将 float 转换为 int，精度截断，此时 i 的值为 3
   ```
 
 类型转换的本质是调用类型转换函数。
@@ -385,9 +410,9 @@ NovaSharp 中的类型转换分为隐式转换和显式转换。
 格式如下：
 
 ```novasharp
-[implicit] [explicit] <目标类型>(<源类型> <变量名>)
+[implicit] [explicit] operator <目标类型>(<源类型> <变量名>)
 {
-    // 转换逻辑
+ // 转换逻辑
 }
 ```
 
@@ -398,12 +423,12 @@ class Temperature
 {
     public float Celsius { get; set; }
 
-    implicit Temperature(float celsius)
+    implicit operator Temperature(float celsius)
     {
         return new Temperature { Celsius = celsius };
     }
 
-    explicit float(Temperature temp)
+    explicit operator float(Temperature temp)
     {
         return temp.Celsius;
     }
@@ -417,40 +442,42 @@ class Temperature
 
 NovaSharp 中的修饰符用于控制类、结构体、函数、变量等的可见性和行为。
 
-| 修饰符      | 解释   | 特性 / 用途                                                                                                                         |
-| ----------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `public`    | 公有   | （可访问性修饰符）可以在**对象之外**被访问                                                                                          |
-| `private`   | 私有   | （可访问性修饰符）只能在**对象内部**被访问                                                                                          |
-| `protected` | 受保护 | （可访问性修饰符）只能在**对象内部**或**派生类**中被访问                                                                            |
-| `internal`  | 内部   | （可访问性修饰符）只能在**同一程序集**内被访问                                                                                      |
-| `penetrate` | 穿透   | （可访问性修饰符，仅对于变量）在**对象，部**与**外部程序集**被视为只读，在**对象内部**可读写；（对于 `break` 语句）用于跳出所有循环 |
-| `static`    | 静态   | 属于**对象**而非其实例                                                                                                              |
-| `readonly`  | 只读   | （仅对于变量）只能在**初始化时**或者**构造函数**中被赋值                                                                            |
-| `const`     | 常量   | 只能在**初始化时**被赋值                                                                                                            |
-| `volatile`  | 易变   | 不被编译器优化                                                                                                                      |
-| `abstract`  | 抽象   | （仅对于类）该成员在派生类中必须被重写                                                                                              |
-| `sealed`    | 密封   | （仅对于类或其成员）该对象不能被继承或重写                                                                                          |
-| `virtual`   | 虚拟   | （仅对于类中的函数）该成员可以在派生类中被重写                                                                                      |
-| `override`  | 重写   | （仅对于类中的虚函数）允许在派生类中重新定义基类中的成员                                                                            |
-| `implicit`  | 隐式   | （仅对于类中的函数）声明隐式转换函数                                                                                                |
-| `explicit`  | 显式   | （仅对于类中的函数）声明显式转换函数                                                                                                |
-| `out`       | 输出   | （仅对于函数参数）按引用传递参数，允许在函数内部修改外部变量的值，并且在函数返回时必须为该参数赋值                                  |
-| `ref`       | 引用   | （仅对于函数参数与变量）声明引用类型                                                                                                |
-| `operator`  | 运算符 | （仅对于类中的函数）声明运算符重载函数                                                                                              |
-| `get`       | 获取   | （仅对于索引器）声明获取索引器                                                                                                      |
-| `set`       | 设置   | （仅对于索引器）声明设置索引器                                                                                                      |
+| 修饰符      | 解释   | 特性 / 用途                                                                                        |
+| ----------- | ------ | -------------------------------------------------------------------------------------------------- |
+| `public`    | 公有   | （可访问性修饰符）可以在**对象之外**被访问                                                         |
+| `private`   | 私有   | （可访问性修饰符）只能在**对象内部**被访问                                                         |
+| `protected` | 受保护 | （可访问性修饰符）只能在**对象内部**或**派生类**中被访问                                           |
+| `internal`  | 内部   | （可访问性修饰符）只能在**同一程序集**内被访问                                                     |
+| `penetrate` | 穿透   | （可访问性修饰符，仅对于字段和变量）作用域外部只读访问，作用域内部读写访问。                       |
+| `static`    | 静态   | 属于**对象**而非其实例                                                                             |
+| `readonly`  | 只读   | （仅对于变量）只能在**初始化时**或者**构造函数**中被赋值                                           |
+| `const`     | 常量   | 只能在**初始化时**被赋值                                                                           |
+| `volatile`  | 易变   | 不被编译器优化                                                                                     |
+| `abstract`  | 抽象   | （仅对于类）该成员在派生类中必须被重写                                                             |
+| `sealed`    | 密封   | （仅对于类或其成员）该对象不能被继承或重写                                                         |
+| `virtual`   | 虚拟   | （仅对于类中的函数）该成员可以在派生类中被重写                                                     |
+| `override`  | 重写   | （仅对于类中的虚函数）允许在派生类中重新定义基类中的成员                                           |
+| `implicit`  | 隐式   | （仅对于类中的函数）声明隐式转换函数                                                               |
+| `explicit`  | 显式   | （仅对于类中的函数）声明显式转换函数                                                               |
+| `out`       | 输出   | （仅对于函数参数）按引用传递参数，允许在函数内部修改外部变量的值，并且在函数返回时必须为该参数赋值 |
+| `ref`       | 引用   | （仅对于函数参数与变量）声明引用类型                                                               |
+| `operator`  | 运算符 | （仅对于类中的函数）声明运算符重载函数                                                             |
+| `get`       | 获取   | （仅对于索引器）声明获取索引器                                                                     |
+| `set`       | 设置   | （仅对于索引器）声明设置索引器                                                                     |
 
 对于所有的可访问性修饰符，它们的可访问性大小关系如下：
 
 ```
-public > penetrate > protected > internal > private
+public > penetrate > internal > protected > private
 ```
 
 ### 赋值语句
 
 赋值语句用于将变量的值设置为另一个值。
 
-其基本语法为 `<变量名> = <值>`。在赋值时，变量的类型必须与赋值的值的类型兼容。
+具体的流程是, 先计算目标值，并将目标值隐式转换为赋值目标的类型，然后再将其拷贝到赋值目标的内存中。
+
+其基本语法为 `<赋值目标> = <目标值>`。在赋值时，变量的类型必须与赋值的值的类型兼容。
 
 ### 运算与表达式
 
@@ -513,6 +540,18 @@ public > penetrate > protected > internal > private
 > [!TIP]
 > 以加法赋值运算符为例：它的本质是 `a = a + b`。
 
+其它运算符：
+
+| 运算符 | 说明       | 使用方法 | 优先级 |
+| ------ | ---------- | -------- | ------ |
+| `in`   | 成员运算符 | `a in b` | 0      |
+| `is`   | 类型运算符 | `a is b` | 0      |
+
+> [!NOTE]
+> 成员运算符 `in` 用于检查 b 是否包含 a。此处 b 必须是一个数组或可以被隐式转换为数组的类型。
+>
+> 类型运算符 `is` 用于检查 a 是否是 b 类型的实例。
+
 其中，优先级越高的运算符**先被计算**，优先级相同的运算符会**按照从左到右的顺序**计算。允许使用小括号来改变运算顺序，使其中的表达式优先级最高，例如 `(a + b) * c` 中，`(a + b)` 会先被计算，从而影响计算结果。
 
 #### 运算符重载
@@ -526,7 +565,7 @@ public > penetrate > protected > internal > private
 ```
 <返回值类型> operator <运算符>(<参数a的类型> <参数a>, [<参数b的类型> <参数b>])
 {
-    // 函数体
+ // 函数体
 }
 ```
 
@@ -558,7 +597,7 @@ struct Point
 ```novasharp
 int a = 5;
 int b = 10;
-int c = a + b * 15;  // 复杂表达式
+int c = a + b * 15; // 复杂表达式
 ```
 
 允许将函数作为操作数，其值为该函数的返回值。
@@ -578,16 +617,19 @@ int c = Calculate(a, b);
 > [!CAUTION]
 > 从内存安全考虑，我们不建议使用指针。请优先考虑使用引用。
 
-指针是一个变量，它存储另一个变量的**内存地址**。通过指针，可以间接访问和修改该变量的值。
+指针是**一类**类型，它们存储另一个变量的**内存地址**。通过指针，可以间接访问和修改该变量的值。
 
-在 NovaSharp 中，如要声明指针变量，须在变量名前面使用 `*` 符号。例如：
+在 NovaSharp 中，如要声明指针类型变量，须在类型后面使用 `*` 符号。例如：
 
 ```novasharp
 int a = 5;
-int *p = &a;  // 声明一个指向整型的指针，并将其指向变量 a 的地址
+int* p = &a; // 声明一个指向整型的指针，并将其指向变量 a 的地址
+int** u = &p; // 声明一个指向指针的指针，并将其指向变量 p 的地址
 ```
 
-其中，`&` 在此处是**取地址运算符**而**不是按位与运算符**，它用于获取变量的内存地址。
+其中，另外，`&` 在此处是**取地址运算符**而**不是按位与运算符**，它用于获取变量的内存地址。
+
+在上述的例子中，`int*` 就是一个 **int 指针类型**，换言之，`int` 是指针 `p` 的**基类型**。实际上，对于每一种类型，都可以作为指针的基类型，包括指针本身。上述例子中的 `int**` 就是一个**“指向指针的指针”**。
 
 > [!TIP]
 > 指针**默认可空**。声明指针时，若不指定初始值，指针将被初始化为 `null`。
@@ -596,13 +638,23 @@ int *p = &a;  // 声明一个指向整型的指针，并将其指向变量 a 的
 
 ```novasharp
 int a = 5;
-int *p = &a;  // 声明一个指向整型的指针，并将其指向变量 a 的地址
-int b = *p;   // 通过指针获取变量 a 的值
+int* p = &a; // 声明一个指向整型的指针，并将其指向变量 a 的地址
+int b = *p; // 通过指针获取变量 a 的值
+```
+
+特别的，指针的基类型可以是一个泛型占位符，例如内存管理的[元数据索引](#元数据索引)一节中所描述的理想模型：
+
+```novasharp
+public struct IndexUnit<TObject>
+{
+    public TObject* ObjectPointer; // 一个指向类型为 TObject 的对象的指针
+    public int ReferenceCount;
+}
 ```
 
 ### 引用
 
-引用是指向变量的别名，是指针的替代品，可以通过引用直接访问和修改变量的值。引用在函数参数传递时非常有用，可以避免复制大对象的开销。
+引用是指向变量的别名，是指针的替代品，可以通过引用直接访问和修改变量的值。引用在函数参数传递时非常有用，可以避免复制大对象的开销。详见[内存管理](#内存管理)一节。
 
 在 NovaSharp 中，当需要声明或传递一个引用时，可以使用 `ref` 关键字。例如：
 
@@ -611,11 +663,12 @@ int a = 5;
 int r = ref a;
 ```
 
-以上代码创建了一个引用 `r`，并将 `a` 的引用传递给它。此时`r` 绑定到变量 `a`，可以直接通过 `r` 访问和修改 `a` 的值。
+以上代码创建了一个变量 `r`，并将 `a` 的引用传递给它。可以大致理解为：此时`r` 绑定到变量 `a`，可以直接通过 `r` 访问和修改 `a` 的值。
 
-对于基本类型的变量，只能在变量声明时使用 `ref` 关键字，不能在后续的赋值操作中使用。
+> [!IMPORTANT]
+> 只有当变量声明时将其**初始值**设为一个引用，才能创建引用。因此对于任何变量和字段，只能在变量声明时使用 `ref` 关键字，**不能在后续的赋值操作中使用**。
 
-对于类、抽象类、结构体、接口等类型的变量默认为引用类型，不需要特殊声明 `ref`，且允许在后续的赋值中被传入引用。当这类型变量被作为参数传递时，实际上传递的是引用。
+不能创建指针的引用。原理详见[内存管理](#内存管理)一节。
 
 ### 流程控制
 
@@ -623,9 +676,9 @@ NovaSharp 提供了多种流程控制语句，用于控制程序的执行流程�
 
 流程控制语句的结尾不需要分号。
 
-#### 条件语句
+#### if 语句
 
-条件语句用于根据条件的真假来决定执行不同的代码块。NovaSharp 中的条件语句包括 `if` 和 `else`，它们的基本语法为 `if <条件> <语句或代码块> [else <语句或代码块>]`。其中，`<条件>` 是一个布尔类型的表达式，常见的使用方法如下：
+if 语句用于根据条件的真假来决定执行不同的代码块。NovaSharp 中的 if 语句包括 `if` 和 `else`，它们的基本语法为 `if <条件> <代码块> [else <代码块>]`。其中，`<条件>` 是一个布尔类型的表达式，常见的使用方法如下：
 
 ```novasharp
 if condition
@@ -675,9 +728,105 @@ else
 }
 ```
 
+#### 模式匹配语句
+
+模式匹配是一种强大的控制流机制，允许根据值的结构、类型或内容进行分支选择。它超越了传统的条件语句，提供更清晰、更安全的类型处理方式。
+
+基本语法格式：
+
+```novasharp
+match <表达式>
+{
+    case <模式1>: <结果1>
+    case <模式2>: <结果2>
+    ...
+    [default: <默认结果>]
+}
+```
+
+`match` 支持以下匹配模式：
+
+| 模式类型        | 示例                           | 说明                                                                 |
+| --------------- | ------------------------------ | -------------------------------------------------------------------- |
+| 常量模式        | `case 42:`                     | 匹配特定常量值                                                       |
+| 类型模式        | `case int i:`                  | 匹配特定类型并提取值                                                 |
+| 类型 + 逻辑模式 | `case int i when i > 0:`       | 匹配特定类型、提取值并判断是否符合条件                               |
+| 解构模式        | `case Point(x, y):`            | 匹配、解构复杂类型（如：类、结构体、元组）并提取值                   |
+| 解构 + 逻辑模式 | `case Point(x, y) when x > 0:` | 匹配、解构复杂类型（如：类、结构体、元组）、提取值名判断是否符合条件 |
+| 属性模式        | `case { Length > 0 }`          | 基于属性值匹配                                                       |
+| 逻辑模式        | `case > 0`                     | 使用逻辑运算符组合条件                                               |
+| 默认模式        | `default:`                     | 匹配任何值                                                           |
+
+使用样例：
+
+```novasharp
+// 基本类型匹配
+object value = GetValue();
+
+match value
+{
+    case int i when i > 0: // （类型 + 逻辑模式）value 为 int 类型且大于 0 时
+        Console.WriteLine($"正整数: {i}");
+    case string s: // （类型模式）value 为 string 类型时
+        Console.WriteLine($"字符串长度: {s.Length}");
+    case null: // （常量模式）value 为空时
+        throw new ArgumentNullException();
+    default: // （默认模式）匹配任何其他情况
+        Console.WriteLine("未知类型");
+}
+
+// 解构复杂类型
+struct Point
+{
+    int X;
+    int Y;
+}
+
+Point p = new(3, 4);
+
+match p
+{
+    case Point(0, 0):
+        Console.WriteLine("原点");
+    case Point(x, y) when x == y:
+        Console.WriteLine("对角线上的点");
+    case Point(_, 0):
+        Console.WriteLine("X轴上的点");
+    default:
+        Console.WriteLine($"普通点: ({p.X}, {p.Y})");
+}
+
+// 集合模式匹配
+int[] numbers = {1, 2, 3};
+
+match numbers
+{
+    case int[] i when i[0] == 1:
+        Console.WriteLine("以1开头的数组");
+    case int[] i when i[1] == 2:
+        Console.WriteLine("第二个元素是2");
+    case {}:
+        Console.WriteLine("空数组");
+}
+
+// 逻辑模式
+match 1
+{
+    case == 0:
+        Console.WriteLine($"等于0");
+    case > 2:
+        Console.WriteLine($"大于2");
+    default:
+        Console.WriteLine("其它");
+}
+```
+
+> [!IMPORTANT]
+> 模式中声明的变量仅在对应分支内有效。
+
 #### 循环语句
 
-循环语句用于重复执行循环体（即重复执行同一语句或代码块），直到满足特定条件为止。NovaSharp 中的循环语句包括 `while` 循环、`do while` 循环、 `for` 循环和 `each` 循环。
+循环语句用于重复执行循环体（即重复执行同一代码块），直到满足特定条件为止。NovaSharp 中的循环语句包括 `while` 循环、`do while` 循环、 `for` 循环和 `each` 循环。
 
 其中：
 
@@ -689,7 +838,7 @@ else
   // while 循环
   while condition
   {
-      doSomething();  // 当条件为真时重复执行的代码
+      doSomething(); // 当条件为真时重复执行的代码
   }
   ```
 
@@ -704,27 +853,16 @@ else
   } while (condition);
   ```
 
-- `for` 循环：通过**对循环变量进行操作**来控制循环——**执行前**运行初始化语句，当**条件为真**时执行循环体，每次**执行循环体后**运行更新语句。
+- `for` 循环：通过**对循环变量进行操作**来控制循环——**执行前**运行初始化语句，当**条件为真**时执行循环体，每次**执行循环体后**运行更新语句。其格式为 `for <初始化>; <条件>; <更新> <循环体>`。
 
-  - 对于循环体是**语句**的情况，其格式为 `for <初始化>; <条件>; <更新>; <循环体-语句>`；
+  样例如下:
 
-    样例如下:
-
-    ```novasharp
-    for int i = 0; i < 10; i ++;  // 循环体是语句
-        doSomething();
-    ```
-
-  - 对于循环体是**代码块**的情况，其格式为 `for <初始化>; <条件>; <更新>[;] <循环体-代码块>`。
-
-    样例如下:
-
-    ```novasharp
-    for int i = 0; i < 10; i++    // 循环体是代码块
-    {
-        doSomething(); // 循环体
-    }
-    ```
+  ```novasharp
+  for int i = 0; i < 10; i++
+  {
+      doSomething(); // 循环体
+  }
+  ```
 
 - `each` 循环：用于遍历集合中的每个元素。其格式为 `each <元素类型> <元素> in <集合> <循环体>`。若`<元素类型>`使用**隐式类型推断**（即 `var`），则可以省略。
 
@@ -737,85 +875,26 @@ else
   {
       doSomethingWith(i);
   }
+  ```
 
-  // 以上代码等价于
+  以上代码等价于
 
+  ```novasharp
   each i in numbers
   {
-      doSomethingWith(i);
+  doSomethingWith(i);
   }
   ```
 
-  > [!TIP]
-  > 格式中的 `<集合>` 必须是一个数组或者能够隐式转换为数组的对象。并且，对于每一个元素，都是对集合中对应对象的引用。
-
-#### 模式匹配语句
-
-模式匹配语句用于根据数据内容来选择不同的执行路径。它的基本语法如下：
-
-```
-match <值>
-{
-    case <模式1>: <结果1>
-    case <模式2>: <结果2>
-    ...
-    [default: <默认结果>]
-}
-```
-
-其中，`<值>` 是要匹配的值，`<模式>` 是用来匹配的模式，`<结果>` 是匹配成功后要执行的语句或代码块，`<默认结果>` 则是所有模式都不匹配时要执行的语句或代码块，`<结果>` 为非代码块语句，则末尾需要分号。
-
-此处所讲的模式，是 `<值> <逻辑运算符> <目标值>` 格式的、末尾没有分号的语句。不同的是，该语句开头的 `<值>` 被 `case` 所替代。
-
-样例如下:
-
-```novasharp
-int result = 2;
-
-match result
-{
-    case == 1:
-        doSomethingWithOne();
-        break;  // 跳出 match 语句
-    case < 3:
-        doSomethingWhenLessThanThree();
-        break;
-    default:
-        doSomethingWithUnknown();
-}
-```
-
-> [!IMPORTANT]
-> 每个 `case` 必须包含 `break` 语句。
-
-以上代码基本等价于:
-
-```novasharp
-int result = 2;
-
-bool flag = false;
-
-if result == 1
-{
-    doSomethingWithOne();
-}
-else if result < 3
-{
-    doSomethingWhenLessThanThree();
-}
-else
-{
-    doSomethingWithUnknown();
-}
-
-```
+> [!TIP]
+> 格式中的 `<集合>` 必须是一个数组或者能够隐式转换为数组的对象。并且，对于每一个元素，都是对集合中对应对象的引用。
 
 #### `break` 和 `continue` 语句
 
-`break` 语句用于立即终止循环或 `match` 语句的执行，并跳出当前代码块。`continue` 语句用于跳过当前循环的剩余部分或当前 `case` 的剩余部分，直接进入下一次循环。
+`break` 语句用于立即终止循环或 `switch` 语句的执行，并跳出当前代码块。`continue` 语句用于跳过当前循环的剩余部分或当前 `case` 的剩余部分，直接进入下一次循环。
 
 > [!IMPORTANT]
-> 注意：`break` 和 `continue` 语句只能作用于其所在的循环或 `match` 语句，不会在嵌套结构中的外层循环或外层 `match` 语句中生效。
+> 注意：`break` 和 `continue` 语句只能作用于其所在的循环或 `switch` 语句，不会在嵌套结构中的外层循环或外层 `switch` 语句中生效。
 
 样例如下:
 
@@ -824,16 +903,16 @@ while condition
 {
     if someCondition
     {
-        break;  // 跳出循环
+        break; // 跳出循环
     }
     if anotherCondition
     {
-        continue;  // 跳过当前循环，进入下一次循环
+        continue; // 跳过当前循环，进入下一次循环
     }
 }
 ```
 
-若希望将 `break` 语句作用于嵌套结构中的所有循环，可以在其前方加上 `penetrate` 关键字，但是该语法不适用于 `match`，例如：
+若希望将 `break` 语句作用于嵌套结构中的所有循环，可以在其前方加上 `all` 关键字，但是该语法不适用于 `switch`，例如：
 
 ```novasharp
 while condition1
@@ -842,7 +921,7 @@ while condition1
     {
         if someCondition
         {
-            penetrate break;  // 跳出所有嵌套循环
+            all break; // 跳出所有嵌套循环
         }
     }
 }
@@ -857,7 +936,7 @@ NovaSharp 中的函数用于封装可重用的代码块。函数可以接收参�
 ```novasharp
 [<修饰符1>, <修饰符2>, ...] <返回值类型> <函数名>(<参数1类型> <参数1>[, <参数2类型> <参数2>, <参数3类型> <参数3>, ...])
 {
-    // 函数体
+ // 函数体
 }
 ```
 
@@ -871,11 +950,11 @@ NovaSharp 中的函数用于封装可重用的代码块。函数可以接收参�
 // 函数定义
 int Add(int a, int b)
 {
-    return a + b;   // 计算 a 和 b 的和
+    return a + b; // 计算 a 和 b 的和
 }
 
 // 函数调用
-int result = Add(5, 10);    // 调用 Add 函数，当传入的参数为 5 和 10 时，返回值为 15
+int result = Add(5, 10); // 调用 Add 函数，当传入的参数为 5 和 10 时，返回值为 15
 ```
 
 若希望某些形式参数在调用时可以省略，可以为这些参数提供默认值。默认值的语法为`<参数名> = <默认值>`，并放在参数列表的末尾。
@@ -886,12 +965,12 @@ int result = Add(5, 10);    // 调用 Add 函数，当传入的参数为 5 和 1
 // 函数定义
 int Add(int a, int b = 0)
 {
-    return a + b;   // 计算 a 和 b 的和
+    return a + b; // 计算 a 和 b 的和
 }
 
 // 函数调用
-int result1 = Add(5, 10);    // 调用 Add 函数，传入 5 和 10，返回值为 15
-int result2 = Add(5);         // 调用 Add 函数，传入 5，返回值为 5
+int result1 = Add(5, 10); // 调用 Add 函数，传入 5 和 10，返回值为 15
+int result2 = Add(5); // 调用 Add 函数，传入 5，返回值为 5
 ```
 
 #### `return` 语句
@@ -913,18 +992,21 @@ int result2 = Add(5);         // 调用 Add 函数，传入 5，返回值为 5
 // 函数定义
 int Add(int a, int b)
 {
-    return a + b;   // 计算 a 和 b 的和
+    return a + b; // 计算 a 和 b 的和
 }
 
 double Add(double a, double b)
 {
-    return a + b;   // 计算 a 和 b 的和
+    return a + b; // 计算 a 和 b 的和
 }
 
 // 函数调用
-int result1 = Add(5, 10);    // 调用第一个 Add 函数，返回值为 15
+int result1 = Add(5, 10); // 调用第一个 Add 函数，返回值为 15
 double result2 = Add(5.5, 10.5); // 调用第二个 Add 函数，返回值为 16.0
 ```
+
+> [!IMPORTANT]
+> 同一作用域内且名称、参数列表与条件相同的函数**不能重载**。
 
 #### 带条件的重载
 
@@ -937,7 +1019,7 @@ double result2 = Add(5.5, 10.5); // 调用第二个 Add 函数，返回值为 16
 }
 ```
 
-这些条件可以是任意的布尔表达式，用于限制函数的调用。每个条件之间由逗号隔开。
+这些条件可以是任意的布尔表达式，用于限制函数的调用。每个条件之间由逗号隔开。只有当所有条件都满足时，才会调用该函数。
 
 例如：
 
@@ -947,7 +1029,7 @@ void process(int type, int value) require type == 1
     // 处理 type == 1 时的情况
 }
 
-void process(int type, int value) require type == 2, value < 5
+void process(int type, int value) require type == 2, value < 5 // 相当于 void process(int type, int value) require type == 2 && value < 5
 {
     // 处理 type == 2 且 value < 5 时的情况
 }
@@ -959,7 +1041,7 @@ void process(int type, int value)
 ```
 
 > [!TIP]
-> 调用操作将按照声明顺序从上到下匹配函数，带 `require` 语句的函数会被优先匹配。必须声明一个不带 `require` 语句的同名函数以应对其它情况。
+> 以上述代码为例，**在运行时**，对 `process(int type, int value)` 的调用操作将按照该函数的声明顺序从上到下匹配函数，带条件的函数会被优先匹配。若没有匹配的函数，则会调用不带条件的函数。当没有定义不带条件的函数时，将会抛出 `NoMatchingFunctionException` 异常。
 
 #### 引用值与输出值
 
@@ -1003,7 +1085,7 @@ Add(a, b, out result);
 ```novasharp
 int a, b;
 
-Add(a, b, out int result);  // 变量 result 在此处定义
+Add(a, b, out int result); // 变量 result 在此处定义
 ```
 
 ### 枚举
@@ -1030,9 +1112,9 @@ Add(a, b, out int result);  // 变量 result 在此处定义
 ```novasharp
 public enum Color
 {
-    Red,    // 对应值默认为 0
-    Green = 2,  // 原对应值为 1，由于有显式指定，则此处为 2
-    Blue    // 原对应值默认为 2, 由于没有显式指定，而且与 Green 冲突，于是默认为 3
+    Red, // 对应值默认为 0
+    Green = 2, // 原对应值为 1，由于有显式指定，则此处为 2
+    Blue // 原对应值默认为 2, 由于没有显式指定，而且与 Green 冲突，于是默认为 3
 }
 
 /*
@@ -1050,18 +1132,21 @@ public enum Color
 ### 对象、接口与继承
 
 > [!NOTE]
-> 为方便表达，本章节中所谓“对象”包含了类、结构体与接口的含义，同时，本章节中，“属性”是指类、结构体与接口中的变量，“成员”是指类、结构体与接口中的属性与函数。
+> 本章中所提到的“对象”泛指 class、struct、interface；“字段”指具名存储单元；“方法”指对象中的函数。
 
 #### 结构体
 
-在 NovaSharp 中，结构体是一种值类型，用于封装一组相关的数据。结构体可以包含属性（变量）和方法，允许包含构造函数，但不能包含析构函数或静态成员。
+在 NovaSharp 中，结构体是一种值类型，用于封装一组相关字段。结构体可以包含字段、方法，这些字段和方法是结构体的成员。
+
+> [!IMPORTANT]
+> 结构体允许包含构造函数，但**不能**包含析构函数或静态成员。
 
 结构体的定义格式如下：
 
 ```novasharp
 [<修饰符1>, <修饰符2>, ...] struct <结构体名>
 {
-    // 属性
+    // 字段
     [<修饰符1>, <修饰符2>, ...] <类型>[] <变量名> [= <初始值>]；
 
     // 方法
@@ -1072,7 +1157,7 @@ public enum Color
 }
 ```
 
-注意，对于结构体中的属性与函数，若没有显式声明可访问性修饰符，则默认为 `private`。
+对于结构体中的字段与函数，若没有显式声明可访问性修饰符，则默认为 `private`。
 
 样例如下:
 
@@ -1101,14 +1186,14 @@ p.Move(5, 5);
 
 #### 类
 
-类是 NovaSharp 中用于封装数据和行为的基本构建块。类可以包含字段、属性、方法和事件等成员。
+类是 NovaSharp 中用于封装字段与方法的基本构建块。类可以包含字段、方法，这些字段和方法是类的成员。
 
 类的定义格式如下：
 
 ```novasharp
 [<修饰符1>, <修饰符2>, ...] class <类名>
 {
-    // 属性
+    // 字段
     [<修饰符1>, <修饰符2>, ...] <类型> <字段名> [= <初始值>]；
 
     // 方法
@@ -1119,7 +1204,8 @@ p.Move(5, 5);
 }
 ```
 
-注意，对于类中的成员，若没有显式声明可访问性修饰符，则默认为 `private`。
+> [!IMPORTANT]
+> 对于类中的成员，若没有显式声明可访问性修饰符，则默认为 `private`。
 
 使用类时，可以通过创建其实例来访问其成员。例如：
 
@@ -1144,39 +1230,77 @@ willow.Birthday();
 
 #### 构造函数与析构函数
 
-构造函数是一种特殊类型的函数，用于初始化类的实例。构造函数的名称与类名相同，并且没有返回值。在 NovaSharp 中，构造函数可以有参数，也可以重载。
+构造函数是一种特殊类型的函数，用于初始化类的或者结构体的实例。构造函数的名称与类名相同，并且没有返回值。在 NovaSharp 中，构造函数可以有参数，也可以重载。
 
 构造函数的定义格式如下：
 
 ```novasharp
-[<修饰符1>, <修饰符2>, ...] class <类名>
+public <类名>(<参数列表>)
 {
-    // 构造函数
-    public <类名>(<参数列表>)
-    {
-        // 初始化代码
-    }
+    // 初始化代码
 }
 ```
 
-析构函数是一种特殊类型的函数，用于清理类的实例。在 NovaSharp 中，析构函数的名称与类名相同，但前面加上 `~` 符号，并且没有参数和返回值。
+要创建对象实例，可以使用 `new` 语句调用构造函数，并传递所需的参数。格式如下：
+
+```novasharp
+new <对象名>(<构造函数参数列表>);
+```
+
+> [!IMPORTANT]
+> 注意：`new` 语句返回的是一个引用。
+
+析构函数是一种特殊类型的函数，用于清理类的实例。一般来说，它会被内存管理系统自动调用。在 NovaSharp 中，析构函数的名称与类名相同，但前面加上 `~` 符号，并且没有参数和返回值。
 
 析构函数的定义格式如下：
 
 ```novasharp
-[<修饰符1>, <修饰符2>, ...] class <类名>
+// 析构函数
+public ~<类名>()
 {
-    // 析构函数
-    ~<类名>()
-    {
-        // 清理代码
-    }
+    // 清理代码
 }
 ```
 
+要手动清理类的实例，可以使用 `remove` 语句调用析构函数。格式如下：
+
+```novasharp
+remove <变量名>;
+```
+
+> [!IMPORTANT]
+> 慎用 `remove` 语句，它可能导致未定义的行为。详见[数据的生命周期](#数据的生命周期)
+
+构造函数与析构函数的样例如下:
+
+```novasharp
+public class Person
+{
+    public string Name;
+    public int Age;
+
+    public Person(string Name, int Age)
+    {
+        this.Name = Name;
+        this.Age = Age;
+    }
+
+    public ~Person()
+    {
+
+    }
+}
+
+Person willow = new Person("Willow", 15);
+remove willow;
+```
+
+> [!IMPORTANT]
+> 构造函数与析构函数的访问修饰符默认为 `public`，且它们**不能**被显式声明为 `static`。
+
 #### 继承、虚函数与密封
 
-在 NovaSharp 中，类可以通过继承来扩展其他类的功能。子类可以继承父类的字段、属性和方法，并可以重写父类的方法以提供特定的实现。
+在 NovaSharp 中，类可以通过继承来扩展其他类的功能。子类可以继承父类的字段和方法，并可以重写父类的方法以提供特定的实现。
 
 继承的定义格式如下：
 
@@ -1187,15 +1311,16 @@ willow.Birthday();
 }
 ```
 
-注意，NovaSharp 中的类只支持单继承，即一个类只能继承一个直接父类。而对于接口，NovaSharp 支持多重继承，即一个类可以实现多个接口。
+> [!IMPORTANT]
+> NovaSharp 中的类只支持单继承，即一个类只能继承一个直接父类。而对于接口，NovaSharp 支持多重继承，即一个类可以实现多个接口。
 
 显式声明了 `virtual` 的函数是虚函数。虚函数是允许在派生类中重写的函数。通过使用虚函数，基类可以提供默认实现，而派生类可以选择性地重写该实现。重写虚函数时，必须使用 `override` 关键字作为修饰符。
 
-显式声明了 `sealed` 的类为密封类，不允许被继承。而对于显式声明了 `sealed` 的属性，不允许被实现或重写。
+显式声明了 `sealed` 的类为密封类，不允许被继承。而对于显式声明了 `sealed` 的字段，不允许被实现或重写。
 
 #### 接口
 
-接口是一种特殊的引用类型，用于定义一组方法、属性和事件的契约，它不可以被实例化。类可以实现一个或多个接口，从而承诺提供接口中定义的成员。
+接口是一种引用类型，仅用于声明字段与方法的契约，自身无法被实例化。类可以实现一个或多个接口，从而承诺提供接口中定义的成员。
 
 接口的定义格式如下：
 
@@ -1205,12 +1330,13 @@ willow.Birthday();
     // 方法
     <返回值类型> <方法名>(<参数列表>);
 
-    // 属性
-    <返回值类型> <属性名>;
+    // 字段
+    <返回值类型> <字段名>;
 }
 ```
 
-注意，对于接口中的成员，不需要、也不能声明可访问性修饰符。
+> [!IMPORTANT]
+> 对于接口中的成员，不需要、也不能声明可访问性修饰符。
 
 实现接口时，类必须提供接口中所有成员的具体实现，且这些实现必须是 `public` 的。例如：
 
@@ -1224,24 +1350,47 @@ public interface IDrawable
 public class Circle : IDrawable
 {
     public int PenWidth;
+    public int Radius; // 自定义字段
 
     public void Draw(int color) // 必须实现 Draw(int color) 函数
     {
         // 绘制圆形
     }
 }
+
+public class Rectangle : IDrawable
+{
+    public int PenWidth;
+    public int Width;
+    public int Height;
+
+    public void Draw(int color) // 必须实现 Draw(int color) 函数
+    {
+        // 绘制矩形
+    }
+}
 ```
 
-#### 抽象类
+此时，可以通过 `IDrawable` 接口来调用 `Circle` 实例和 `Rectangle` 实例的 `Draw` 方法：
 
-抽象类是一种不能被实例化的类，它通常包含一个或多个抽象属性、方法，这些方法在派生类中必须被实现。抽象类可以包含其他成员（字段、属性、方法等），这些成员可以有具体的实现。
+```novasharp
+IDrawable circle = new Circle();
+IDrawable rectangle = new Rectangle();
+
+circle.Draw(0xFF0000);
+rectangle.Draw(0x00FF00);
+```
+
+#### 抽象类与派生类
+
+抽象类是一种不可实例化的类，可包含抽象字段、抽象方法作为成员，这些方法在派生类中必须被实现。抽象类可以包含其他成员（字段、方法等），这些成员可以有具体的实现。
 
 抽象类的定义格式如下：
 
 ```novasharp
 [<修饰符1>, <修饰符2>, ...] abstract class <类名>
 {
-    // 属性
+    // 字段
     [<修饰符1>, <修饰符2>, ...] <类型> <字段名> [= <初始值>]；
 
     // 方法
@@ -1249,7 +1398,8 @@ public class Circle : IDrawable
 }
 ```
 
-注意，对于抽象类中的成员，若没有显式声明可访问性修饰符，则默认为 `private`。
+> [!CAUTION]
+> 对于抽象类中的成员，若没有显式声明可访问性修饰符，则默认为 `private`。
 
 使用抽象类时，必须创建其派生类并实现所有抽象成员。例如：
 
@@ -1273,9 +1423,9 @@ public class Circle : Shape
 }
 ```
 
-#### 匿名对象
+#### 匿名实例
 
-当你需要一个临时对象来传递数据，但又不想为它定义一个具体的类时，可以使用匿名对象。匿名对象可以在创建时初始化其属性，并且可以在需要时传递。
+若需临时聚合数据而又不想显式声明类型，可使用匿名实例。匿名对象可以在创建时初始化其字段，并且可以在需要时传递。
 
 匿名对象的定义格式如下：
 
@@ -1286,7 +1436,7 @@ new {
 }
 ```
 
-使用时，编译器将对匿名对象生成具名类型。可用 `var` 关键字来接收这个具名类型的实例。例如：
+使用时，编译器将对匿名实例生成具名类型。可用 `var` 关键字来接收这个具名类型的实例。例如：
 
 ```novasharp
 var person = new {
@@ -1295,9 +1445,9 @@ var person = new {
 };
 ```
 
-#### 对象的非静态子函数
+#### 实例方法的隐式 this
 
-在 NovaSharp 中，对象的非静态子函数是指在对象内部定义的函数，它也包括构造函数和析构函数，这些函数可以直接访问所属实例的子函数数和属性。举例：
+在 NovaSharp 中，对象的实例方法是指在对象内部定义的、没有声明 `static` 的函数。它也包括构造函数和析构函数，这些函数可以直接访问所属实例的字段和方法，并且可以被其他函数调用。举例：
 
 ```novasharp
 public class Person
@@ -1311,17 +1461,15 @@ public class Person
         this.Age = Age;
     }
 
-    public void CelebrateBirthday() // CelebrateBirthday() 是 Person 类的非静态子函数
+    public void CelebrateBirthday() // CelebrateBirthday() 是 Person 类的实例方法
     {
         Age++;
-        Console.WriteLine($"Today is {Name}'s birthday! Now {Age} years old.");  // 允许访问所属实例的 Name 字段
+        Console.WriteLine($"Today is {Name}'s birthday! Now {Age} years old."); // 允许访问所属实例的 Name 字段
     }
 }
 ```
 
-对象的非静态子函数可以直接访问所属对象实例的字段和属性，并且可以被其他函数调用。
-
-可以看到，在上述代码中，`Person` 的构造函数使用了不存在的 `this` 变量以强调被具体赋值的 `Name` 是 `Person` 的属性而不是构造函数的参数。这是被允许的。实际上，对象的非静态子函数均隐藏了一个名为 `this` 的引用参数，指向当前对象的实例。因此，以上代码的本质是：
+在上述代码中，`Person` 的构造函数使用了看上去不存在的 `this` 变量。这种操作这是被允许的。实际上，对象的实例方法均隐藏了一个名为 `this` 的引用参数，指向当前对象的实例。因此，上述代码的本质是：
 
 ```novasharp
 public class Person
@@ -1329,7 +1477,7 @@ public class Person
     public string Name;
     public int Age;
 
-    public static Person(ref Person this, string Name, int Age) // 构造函数不能为静态，此处为方便理解。
+    public static Person(ref Person this, string Name, int Age) // 构造函数不能被显式声明为静态，此处是为了方便理解。
     {
         this.Name = Name;
         this.Age = Age;
@@ -1371,17 +1519,17 @@ int count = text.WordCount();
 
 #### 静态
 
-静态成员是属于类而不是类的实例的成员，它们不依赖于特定实例的状态。。静态成员在类加载时创建，并在程序运行期间存在。它们可以通过类名直接访问，而不需要创建类的实例。要声明静态成员，可以使用 `static` 关键字。例如：
+静态成员属于类型本身，而非类型的任何实例，它们不依赖于特定实例的状态。静态成员在对象加载时创建，并在程序运行期间存在。它们可以通过对象名直接访问，而不需要创建对象的实例。要声明静态成员，可以使用 `static` 关键字。例如：
 
 ```novasharp
 public class Counter
 {
     public static int TotalCount = 0; // 静态成员，所有实例共享
-    public int InstanceCount = 0;     // 非静态成员，每个实例独有
+    public int InstanceCount = 0; // 非静态成员，每个实例独有
 
     public void Increment()
     {
-        TotalCount++;    // 增加全局计数
+        TotalCount++; // 增加全局计数
         InstanceCount++; // 增加当前实例计数
     }
 }
@@ -1393,8 +1541,8 @@ a.Increment();
 b.Increment();
 
 Console.WriteLine(Counter.TotalCount); // 输出: 2 （所有实例共享的静态成员）
-Console.WriteLine(a.InstanceCount);    // 输出: 1 （a 实例的非静态成员）
-Console.WriteLine(b.InstanceCount);    // 输出: 1 （b 实例的非静态成员）
+Console.WriteLine(a.InstanceCount); // 输出: 1 （a 实例的非静态成员）
+Console.WriteLine(b.InstanceCount); // 输出: 1 （b 实例的非静态成员）
 ```
 
 上例中，`TotalCount` 是静态成员，所有 `Counter` 实例共享同一个值；而 `InstanceCount` 是非静态成员，每个实例有自己的独立值。
@@ -1527,12 +1675,12 @@ public class Repository<T, U> where T is Entity，U is IComparable
 }
 ```
 
-对于函数而言，`where` 关键字可以与 `requires` 关键字结合使用，以指定更复杂的约束条件。
+对于函数而言，`where` 关键字还可以与 `requires` 关键字结合使用，以指定更复杂的约束条件。
 
-例如：
+此时，`where` 字段与 `requires` 字段必须要用 `|` 分隔，例如：
 
 ```novasharp
-public T SetEntityData<T>(T target, string name) where T is Entity require name != null, name.Length > 0
+public T SetEntityData<T>(T target, string name) where T is Entity | require name != null, name.Length > 0
 {
     target.Name = name;
     target.UpdatedAt = DateTime.Now;
@@ -1569,7 +1717,7 @@ public class Calculator
 }
 
 // 使用委托
-MathOperation op = new MathOperation(new Calculator().Add);
+MathOperation op = new Calculator().Add;
 int result = op(5, 3);
 ```
 
@@ -1594,7 +1742,7 @@ delegate Add(int a, int b) = (x, y) => x + y;
 
 #### 使用 Lambda 简化函数声明
 
-Lambda 提供了一种简化函数声明的方式，它长这样：
+Lambda 提供了一种简化函数声明的方式，它的语法如下：
 
 ```novasharp
 [<修饰符1>, <修饰符2>, ...] <返回值类型> <函数名>(<参数列表>) => <语句或代码块>;
@@ -1667,7 +1815,7 @@ namespace MyApplication
 {
     public static void Main()
     {
-        Console.WriteLine("Hello, World!"); // In namespace: Standard.IO
+        Console.WriteLine("Hello, World!"); // 来自命名空间 Standard.IO 的 Console 类
     }
 }
 ```
@@ -1711,7 +1859,7 @@ public class Program
         {
             Console.WriteLine("Error: Division by zero is not allowed.");
         }
-        catch Exception e   // 通过堆叠 catch 块来处理不同类型的异常
+        catch Exception e // 通过堆叠 catch 块来处理不同类型的异常
         {
             Console.WriteLine("Error: Unknown exception occurred.");
         }
@@ -1732,6 +1880,23 @@ public class Program
 
 > [!IMPORTANT]
 > 注意：`finally` 块中禁止 `return`。
+
+#### 抛出异常
+
+在 NovaSharp 中，可以使用 `throw` 关键字来手动抛出异常。抛出异常的基本语法如下：
+
+```novasharp
+throw <异常对象>;
+```
+
+例如，要抛出一个 `DivideByZeroException`，可以这样写：
+
+```novasharp
+if (b == 0)
+{
+    throw new DivideByZeroException("Division by zero is not allowed."); // 创建一个名为 DivideByZeroException 的异常对象
+}
+```
 
 #### `Exception` 类实现
 
@@ -1755,11 +1920,135 @@ public class Exception
 
 在 NovaSharp 中，内置的异常类型主要包括以下几种：
 
-| 名称                        | 描述                                       |
-| --------------------------- | ------------------------------------------ |
-| `NullReferenceException`    | 当尝试访问一个为 `null` 的对象时引发。     |
-| `DivideByZeroException`     | 当尝试进行零除法运算时引发。               |
-| `IndexOutOfRangeException`  | 当访问数组或集合时使用了无效的索引时引发。 |
-| `InvalidOperationException` | 当对象处于不适合执行操作的状态时引发。     |
-| `ArgumentException`         | 当方法接收到一个无效的参数时引发。         |
-| `NotImplementedException`   | 当方法尚未实现时引发。                     |
+| 名称                                 | 描述                                                     |
+| ------------------------------------ | -------------------------------------------------------- |
+| `NullReferenceException`             | 当尝试访问一个为 `null` 的对象时引发。                   |
+| `DivideByZeroException`              | 当尝试进行零除法运算时引发。                             |
+| `IndexOutOfRangeException`           | 当访问数组或集合时使用了无效的索引时引发。               |
+| `InvalidOperationException`          | 当对象处于不适合执行操作的状态时引发。                   |
+| `ArgumentException`                  | 当方法接收到一个无效的参数时引发。                       |
+| `NotImplementedException`            | 当方法尚未实现时引发。                                   |
+| `NoMatchingFunctionException`        | 当没有找到匹配的函数时引发。                             |
+| `InvalidIndexUnitReferenceException` | 当尝试访问的变量所持有的索引单元不存在或已被回收时引发。 |
+
+## 内存管理
+
+> [!NOTE]
+> 本章节中我们讨论的“对象”是指在内存中分配的实例，包括基本类型、结构体、类等。
+
+NovaSharp 使用半自动内存管理模型，它包含**对象索引**和**数据存储池**两大内存空间。
+
+重申：NovaSharp 不依赖于运行时。这意味着不可能仿照传统的 C# 的 GC 机制。
+
+内存管理的实现细节**由编译器决定**。
+
+### 数据存储池
+
+数据存储池是一块堆内存，它用于存放对象的实际数据。
+
+为了方便可能的多语言、多系统协同场景需求，数据存储池内的对象存储布局应当符合通用的布局方式。
+
+### 对象索引与索引单元
+
+对象索引的基本单位是索引单元，索引单元用于存储对象的指针、引用计数等信息。
+
+这是索引单元模型：
+
+```novasharp
+public struct IndexUnit<TObject>
+{
+    public TObject* ObjectPointer;
+    public uint ReferenceCount;
+}
+```
+
+> [!TIP]
+> 以上只是索引单元的理想模型。实际上的索引单元在内存上可能会更加紧凑，并可能存储更多的数据以进行访问效率等方面的优化。
+
+对于每一个对象，都可以在元数据索引中找到对应的索引单元。
+
+这么设计可以辅助定位和管理对象并高效处理对象引用，为内存管理提供支持。
+
+#### 索引单元、变量与数据之间的关系
+
+变量（指针类型的变量除外）本身并不存储对象，而是**持有**索引单元。
+
+对象被存储在数据存储池中，索引单元则存储指向对象的指针与引用计数。
+
+一个索引单元允许被多个变量**持有**。索引单元的引用计数用于跟踪持有该索引单元的变量数量，当：
+
+- **有新的变量持有**该索引单元时，引用计数加 1。
+- 有持有该索引单元的变量**被销毁时**，引用计数减 1。
+- 引用计数为**归零**时，索引单元将被回收，其对应的数据也会被回收。
+
+#### 引用的本质
+
+引用本质上传递了一个索引单元。当引用作为变量的初始值时，它持有的就是该引用所传递的索引单元。
+
+NovaSharp 不允许循环引用的出现。
+
+#### 对指针的特殊处理
+
+指针类型的变量将绕过对象索引直接指向数据。因此禁止将引用传递给指针。
+
+当对非指针类型变量进行取地址操作时，实际上是获取了该变量持有的索引单元所指向的数据地址。
+
+例如：
+
+```novasharp
+int a = 1;
+int b = ref a;
+int* p1 = &b; // 合法，这里获取了变量 b 持有的索引单元所指向的数据地址
+int* p2 = ref b; // 报错，引用所传递的是对索引单元，指针类型的变量不能持有索引单元
+```
+
+### 数据的生命周期
+
+在 NovaSharp 中，数据的生命周期由其所对应的索引单元的引用计数决定，与作用域无直接关联。当一个对象被创建时，其引用计数为 1；当有新的引用指向该对象时，引用计数会增加；当引用被销毁时，引用计数会减少。当引用计数为 0 时，对象会被回收。
+
+下面给出一个简单的场景：
+
+```novasharp
+public int[] CreateRange(int start, int end)
+{
+    int[] result = new int[end - start];
+    for int i = 0; i < result.Length; i++
+    {
+        result[i] = start + i;
+    }
+    return result;
+}
+
+public int Main()
+{
+    int[] range = ref CreateRange(1, 5);
+}
+```
+
+让我们就这个例子进行简要分析：
+
+1. 调用了函数 `CreateRange(1, 5)`
+2. `new int[4]` 创建了一个大小为 4 的 `int` 类型数组，并将其放入数据存储池中，创建对应的索引单元（此处用 IU 表示）。
+3. `result` 被创建，并持有 IU，**IU 的引用计数加 1**。
+4. `result` 作为返回值被返回，**IU 的引用计数加 1**。
+5. `result` 离开作用域被销毁，**IU 的引用计数减 1**。
+6. `range` 被创建，并持有 IU，**IU 的引用计数加 1**。
+7. `CreateRange(1, 5)` 的返回值所在的语句结束，**IU 的引用计数减 1**。
+8. `range` 离开作用域（`Main` 函数退出）被销毁，**IU 的引用计数减 1**。
+9. 由于 IU 的引用计数归零，IU 所指向的对象将被回收，IU 被回收。
+
+#### `remove` 语句的本质
+
+NovaSharp 允许使用 `remove` 语句手动回收变量所对应的数据，并回收数据对应的索引单元。
+
+当执行 `remove` 语句时：
+
+1. 获取变量持有的索引单元。
+2. 回收索引单元及其对应的数据。（相当于将索引单元的引用计数归零）
+3. 销毁变量。（相当于 `delete` 语句）
+
+此时，如果有别的持有相同索引单元的变量，当尝试访问这些变量时，由于它们所持有的索引单元已被回收，则会引发 `InvalidIndexUnitReferenceException` 异常。
+
+### 临时对象存储优化
+
+编译器可依据逃逸分析，将作用域局限在函数内的对象直接分配在栈上，无需索引单元。
