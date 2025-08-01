@@ -6,12 +6,4 @@
 
 ## 语言标准
 
-- [NovaSharp 1.0](/Standard/NovaSharp1.0.md)
-
-## 编译器
-
-### 先决条件
-
-```bash
-sudo apt install -y build-essential nasm gcc-multilib flex bison git
-```
+- [NovaSharp 1.0](/Language-Standard/NovaSharp1.0.md)
