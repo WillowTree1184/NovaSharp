@@ -10,8 +10,8 @@ NovaSharp 源码文件扩展名固定为 `.ns`。
 
 | 类别            | 规则        | 示例                                    |
 | --------------- | ----------- | --------------------------------------- |
-| 局部变量        | camelCase   | `itemCount`                             |
-| 全局变量        | PascalCase  | `CacheSize`                             |
+| 局部变量、字段  | camelCase   | `itemCount`                             |
+| 全局变量、字段  | PascalCase  | `CacheSize`                             |
 | 常量            | SNAKE_CASE  | `INT_MAX`                               |
 | 类 / 结构体     | PascalCase  | `Account`                               |
 | 枚举 / 枚举成员 | PascalCase  | `ComponentActivity`                     |
@@ -20,7 +20,7 @@ NovaSharp 源码文件扩展名固定为 `.ns`。
 | 泛型            | TPascalCase | `T`（更为常用），`TItem`（包含 T 前缀） |
 
 > [!TIP]
-> 命名规范中提到的**局部变量**是指**在函数内部定义的变量**或者**带有 `public`、`penetrate`、`internal` 可访问性修饰符的字段**。
+> 命名规范中提到的**局部变量、字段**是指**在函数内部定义的变量**或者**带有 `protected`、`private` 可访问性修饰符的字段**。
 
 为了提高代码可读性与可维护性，我们**不推荐**在命名时采用**缩写**或者**没有意义的名称**，也不推荐采用**拼音**作为变量名。
 
@@ -204,7 +204,7 @@ NovaSharp 中的类型分为如下几类：
 1. 使用 `new` 关键字，通过 `new <类型>[<数量>]` 语句，显式创建一个大小为 `<数量>` 的数组实例。
 2. 使用数组表达式。
 
-数组表达式格式为 `{ <元素1>, <元素2>, ... }`，代表数组中的若干个元素，可以被隐式转换为数组。若将一个元素数量为 `n` 的数组表达式赋值给数组，则代表将该数组表达式的元素的前 `n` 个元素按照顺序从 0 号索引逐一赋值给目标数组，如果发生越界，将会抛出异常。允许使用数组表达式初始化数组。
+数组表达式格式为 `{ <元素1>, <元素2>, ... }`，代表数组中的若干个元素，可以被隐式转换为数组。若将一个元素数量为 `n` 的数组表达式赋值给数组，则代表将该数组表达式的元素的前 `n` 个元素按照顺序从 0 号索引逐一赋值给目标数组，如果发生越界，将会抛出 `IndexOutOfRangeException` 异常。允许使用数组表达式初始化数组。
 
 数组声明语句采用 `[<修饰符1>, <修饰符2>, ...] <类型>[] <变量名> [= <初始值>]` 的形式。样例如下：
 
@@ -272,8 +272,8 @@ public string(int size, char target = ' ');
 | `public string Replace(char oldValue, char newValue)`            | 替换字符串中的指定字符并返回新字符串。         |
 | `public string Insert(int index, string value)`                  | 在指定位置插入字符串并返回新字符串。           |
 | `public string Remove(int start, int length = 1)`                | 移除指定位置开始的子字符串并返回新字符串。     |
-| `public string Split(char separator)`                            | 将字符串拆分为多个子字符串并返回字符串数组。   |
-| `public string Split(char[] separators)`                         | 将字符串拆分为多个子字符串并返回字符串数组。   |
+| `public string[] Split(char separator)`                          | 将字符串拆分为多个子字符串并返回字符串数组。   |
+| `public string[] Split(char[] separators)`                       | 将字符串拆分为多个子字符串并返回字符串数组。   |
 
 字符串可以被隐式或显式转换为 `char[]`。
 
@@ -381,6 +381,28 @@ Console.WriteLine(nested.Info.Score); // 输出: 95
 int? nullableInt = null; // 可空整型
 ```
 
+##### 空合并运算符
+
+空合并运算符 `??` 用于简化对可空类型的处理。当一个可空类型的值为 `null` 时，可以使用空合并运算符提供一个默认值。
+
+例如：
+
+```novasharp
+int? nullableInt = null;
+int value = nullableInt ?? 0; // 如果 nullableInt 为 null，则使用 0；否则使用 nullableInt 的值
+```
+
+##### 空条件访问
+
+空条件访问运算符 `?.` 用于简化对可空类型的访问。仅当左操作数非 `null` 时才继续访问成员；否则整个表达式结果为 `null`。
+
+例如：
+
+```novasharp
+string? name = null;
+int? length = name?.Length; // 如果 name 为 null，则 length 为 null；否则使用 name 的长度
+```
+
 #### 类型转换
 
 NovaSharp 中的类型转换分为隐式转换和显式转换。
@@ -464,6 +486,9 @@ NovaSharp 中的修饰符用于控制类、结构体、函数、变量等的可�
 | `operator`  | 运算符 | （仅对于类中的函数）声明运算符重载函数                                                             |
 | `get`       | 获取   | （仅对于索引器）声明获取索引器                                                                     |
 | `set`       | 设置   | （仅对于索引器）声明设置索引器                                                                     |
+| `async`     | 异步   | （为标准库保留，仅对于函数）声明异步函数                                                           |
+
+#### 可访问性大小关系
 
 对于所有的可访问性修饰符，它们的可访问性大小关系如下：
 
@@ -484,6 +509,8 @@ public > penetrate > internal > protected > private
 在 NovaSharp 中，运算符用于执行各种操作，包括**算术运算**、**比较运算**和**逻辑运算**等。运算符可以与**操作数结合**形成**表达式**，表达式的值可以用于**赋值**、**条件判断**等场景。
 
 #### 运算符
+
+以下运算符，优先级值越大越先被处理。
 
 数学运算符：
 
@@ -542,10 +569,11 @@ public > penetrate > internal > protected > private
 
 其它运算符：
 
-| 运算符 | 说明       | 使用方法 | 优先级 |
-| ------ | ---------- | -------- | ------ |
-| `in`   | 成员运算符 | `a in b` | 0      |
-| `is`   | 类型运算符 | `a is b` | 0      |
+| 运算符 | 说明         | 使用方法 | 优先级 |
+| ------ | ------------ | -------- | ------ |
+| `??`   | 空合并运算符 | `a ?? b` | 0      |
+| `in`   | 成员运算符   | `a in b` | 0      |
+| `is`   | 类型运算符   | `a is b` | 0      |
 
 > [!NOTE]
 > 成员运算符 `in` 用于检查 b 是否包含 a。此处 b 必须是一个数组或可以被隐式转换为数组的类型。
@@ -669,6 +697,22 @@ int r = ref a;
 > 只有当变量声明时将其**初始值**设为一个引用，才能创建引用。因此对于任何变量和字段，只能在变量声明时使用 `ref` 关键字，**不能在后续的赋值操作中使用**。
 
 不能创建指针的引用。原理详见[内存管理](#内存管理)一节。
+
+#### 对于引用的引用
+
+在 NovaSharp 中，当引用一个引用时，实际上是复制了该引用。这是因为引用并不存储实际数据，而是指向对应的索引单元。有关索引单元的内容，详见[对象索引与索引单元](#对象索引与索引单元)一节。
+
+例如：
+
+```novasharp
+int a = 5;
+int r = ref ref a; // 与 int r = ref a; 的效果相同
+```
+
+上述代码中创建了一个引用的 `ref a` 的引用，此时该引用仍旧指向 `a` 对应的索引单元。
+
+> [!NOTE]
+> 我们**不推荐**在实际代码中使用引用的引用，因为这可能会导致混淆和错误。
 
 ### 流程控制
 
@@ -1132,7 +1176,223 @@ public enum Color
 ### 对象、接口与继承
 
 > [!NOTE]
-> 本章中所提到的“对象”泛指 class、struct、interface；“字段”指具名存储单元；“方法”指对象中的函数。
+> 本章中所提到的“对象”泛指 class、struct、interface；“方法”指对象中的函数。
+
+#### 字段、属性与存取器
+
+字段是对象中的变量，用于存储数据。例如：
+
+```novasharp
+public struct Point
+{
+    public int X;
+    public int Y;
+}
+```
+
+其中的 `X` 和 `Y` 是字段。
+
+而属性，则是在对象中，**以字段的形式**提供一系列的**存取器**。也就是说，属性对外表现为字段，但内部由存取器实现。NovaSharp 允许以访问字段的形式访问属性，但是属性本质上**不是字段**，并不会像字段一样存储数据。
+
+欲定义属性，可以使用以下格式：
+
+```novasharp
+[<修饰符1>, <修饰符2>, ...] <类型> <属性名>
+{
+    <存取器定义>
+}
+```
+
+存取器是一种特殊的函数。NovaSharp 中存在两种存取器：
+
+| 存取器 | 作用                 |
+| ------ | -------------------- |
+| get    | 处理对属性的读取操作 |
+| set    | 处理对属性的赋值操作 |
+
+例如：
+
+```novasharp
+public class Person
+{
+    private int identity; // 私有字段
+    private int age; // 私有字段
+
+    public Person(int id, age)
+    {
+        identity = id;
+        this.age = age;
+    }
+
+    public int Id  // 公开的属性
+    {
+        get
+        {
+            return identity; // 当读取属性时，返回私有字段 identity 的值
+        };
+    }
+
+    public int Age
+    {
+        get
+        {
+            return age; // 当读取属性时，返回私有字段 age 的值
+        };
+
+        set
+        {
+            age = value; //// 当写入属性时，设置私有字段 age 的值
+        };
+    }
+}
+
+int Main()
+{
+    Person willow = new Person(1, 15);
+
+    // 以访问字段的形式访问属性
+    willow.Age = 16;
+    Console.WriteLine($"Name: {willow.Name}, Age: {willow.Age}");
+}
+```
+
+可以看出：
+
+- 存取器 `get` 和 `set` 可以同时存在。
+- 存取器 `get` 的返回值类型为**该存取器所在的属性所对应的类型**；而存取器 `set` 的返回值类型为 `void`。
+- 存取器 `set` 中提供一个关键字 `value`，用于表示要设置的值。
+
+另外，可访问性修饰符可以用于存取器，以控制对存取器的访问权限。但是存取器的可访问性必须**低于或等于**属性本身的可访问性。详见[可访问性大小关系](#可访问性大小关系)。
+
+例如：
+
+```novasharp
+public class Person
+{
+    private int age; // 私有字段
+
+    public int Age // 公开的属性
+    {
+        get
+        {
+            return age; // 当读取属性时，返回私有字段 age 的值
+        };
+
+        private set // 仅在 Person 内部可写
+        {
+            age = value; // 当写入属性时，设置私有字段 age 的值
+        };
+    }
+
+    public void CelebrateBirthday()
+    {
+        Age ++;
+    }
+}
+```
+
+对于**没有显式声明可访问性修饰符**的存取器，其可访问性默认**与对应属性的可访问性相同**。
+
+##### 属性的隐藏字段
+
+当属性的 `get` 存取器或者 `set` 存取器访问了 `field` 关键字时，编译器会自动为属性创建**仅该属性的存取器可见**的隐藏字段。这种隐藏字段不能被对象中其他任何成员访问。且隐藏字段的生命周期与所属对象一致，随对象销毁而回收。
+
+例如：
+
+```novasharp
+public class Person
+{
+    public int Id  // 带隐藏字段的属性
+    {
+        get
+        {
+            return field;
+        };
+
+        private set
+        {
+            field = value;
+        };
+    }
+
+    public int Age
+    {
+        get
+        {
+            return field;
+        };
+
+        set
+        {
+            field = value;
+        };
+    }
+}
+```
+
+在属性中，可以使用 `field` 关键字来访问属性所对应的隐藏字段。
+
+##### 存取器的简写形式
+
+存取器 `get` 和 `set` 存在简写形式:
+
+- 对于：
+
+  ```novasharp
+  get
+  {
+      return field;
+  };
+  ```
+
+  可以直接用 `get` 代替。
+
+- 对于：
+
+  ```novasharp
+  set
+  {
+      field = value;
+  };
+  ```
+
+  可以直接用 `set` 代替。
+
+例如：
+
+```novasharp
+public class Person
+{
+    public int Age { get; set; }
+}
+```
+
+以上代码等价于:
+
+```novasharp
+public class Person
+{
+    public int Age
+    {
+        get
+        {
+            return field;
+        };
+
+        set
+        {
+            field = value;
+        };
+    }
+}
+```
+
+##### 属性的隐藏字段与引用
+
+在属性中，若需创建属性所对应的隐藏字段的引用，可以直接使用 `ref <属性名>` 的格式。
+
+> [!IMPORTANT]
+> 属性本身无法被引用，因为属性不存储数据。
 
 #### 结构体
 
@@ -1221,11 +1481,14 @@ public class Person
     }
 }
 
-// 创建类的实例
-Person willow = new Person();
-willow.Name = "Willow";
-willow.Age = 15;
-willow.Birthday();
+int Main()
+{
+    // 创建类的实例
+    Person willow = new Person();
+    willow.Name = "Willow";
+    willow.Age = 15;
+    willow.Birthday();
+}
 ```
 
 #### 构造函数与析构函数
@@ -1291,8 +1554,11 @@ public class Person
     }
 }
 
-Person willow = new Person("Willow", 15);
-remove willow;
+int Main()
+{
+    Person willow = new Person("Willow", 15);
+    remove willow;
+}
 ```
 
 > [!IMPORTANT]
@@ -1512,9 +1778,12 @@ public static int WordCount(this string str)
     return str.Split(new[] { ' ', '\n', '\r' }).Length;
 }
 
-// 使用扩展函数
-string text = "Hello, world!";
-int count = text.WordCount();
+int Main()
+{
+    // 使用扩展函数
+    string text = "Hello, world!";
+    int count = text.WordCount();
+}
 ```
 
 #### 静态
@@ -1534,15 +1803,18 @@ public class Counter
     }
 }
 
-Counter a = new Counter();
-Counter b = new Counter();
+int Main()
+{
+    Counter a = new Counter();
+    Counter b = new Counter();
 
-a.Increment();
-b.Increment();
+    a.Increment();
+    b.Increment();
 
-Console.WriteLine(Counter.TotalCount); // 输出: 2 （所有实例共享的静态成员）
-Console.WriteLine(a.InstanceCount); // 输出: 1 （a 实例的非静态成员）
-Console.WriteLine(b.InstanceCount); // 输出: 1 （b 实例的非静态成员）
+    Console.WriteLine(Counter.TotalCount); // 输出: 2 （所有实例共享的静态成员）
+    Console.WriteLine(a.InstanceCount); // 输出: 1 （a 实例的非静态成员）
+    Console.WriteLine(b.InstanceCount); // 输出: 1 （b 实例的非静态成员）
+}
 ```
 
 上例中，`TotalCount` 是静态成员，所有 `Counter` 实例共享同一个值；而 `InstanceCount` 是非静态成员，每个实例有自己的独立值。
@@ -1570,19 +1842,20 @@ int result = MathUtils.Add(5, 3);
 
 #### 索引器
 
-索引器是一种特殊的函数，允许通过数组索引的方式访问对象的内部数据。在 NovaSharp 中，可以使用 `this` 关键字来定义索引。并使用 `get` 和 `set` 修饰符来分别定义获取和设置值的逻辑。
-
-索引器的定义格式如下：
+索引器是一种特殊的属性，允许通过数组索引的方式访问对象的内部数据。在 NovaSharp 中，可以使用 `this` 关键字来定义索引。并使用 `get` 和 `set` 存取器来分别定义获取和设置值的逻辑。格式如下：
 
 ```novasharp
-[<修饰符1>, <修饰符2>, ...] <返回值类型> get this[<索引变量1类型> <索引变量1名称>[, <索引变量2类型> <索引变量2名称>, ...]]
+public <返回值类型> this[<参数列表>]
 {
-    // 方法体
-}
+    get
+    {
+        <获取值的逻辑>
+    };
 
-[<修饰符1>, <修饰符2>, ...] <返回值类型> set this[<索引变量1类型> <索引变量1名称>[, <索引变量2类型> <索引变量2名称>, ...]](<参数列表>)
-{
-    // 方法体
+    set
+    {
+        <设置值的逻辑>
+    }
 }
 ```
 
@@ -1598,23 +1871,28 @@ public class StringCollection
         this.strings = strings;
     }
 
-    // 定义获取索引器
-    public string get this[int index]
+    // 定义索引器
+    public string this[int index]
     {
-        return strings[index];
-    }
+        get
+        {
+            return strings[index];
+        };
 
-    // 定义设置索引器
-    public void set this[int index](string value)
-    {
-        strings[index] = value;
+        set
+        {
+            strings[index] = value;
+        };
     }
 }
 
-StringCollection collection = new StringCollection(new string[] { "Hello", "World" });
-Console.WriteLine(collection[0]); // 输出: Hello
-collection[1] = "NovaSharp";
-Console.WriteLine(collection[1]); // 输出: NovaSharp
+int Main()
+{
+    StringCollection collection = new StringCollection(new string[] { "Hello", "World" });
+    Console.WriteLine(collection[0]); // 输出: Hello
+    collection[1] = "NovaSharp";
+    Console.WriteLine(collection[1]); // 输出: NovaSharp
+}
 ```
 
 #### 对象对 each 循环的隐式适配提示
@@ -1657,6 +1935,11 @@ public struct Pair<TKey, TValue>
 以泛型函数为例：
 
 ```novasharp
+public class Entity
+{
+
+}
+
 public T SetEntityData<T>(T target) where T is Entity
 {
     // 函数体
@@ -1745,7 +2028,7 @@ delegate Add(int a, int b) = (x, y) => x + y;
 Lambda 提供了一种简化函数声明的方式，它的语法如下：
 
 ```novasharp
-[<修饰符1>, <修饰符2>, ...] <返回值类型> <函数名>(<参数列表>) => <语句或代码块>;
+[<修饰符1>, <修饰符2>, ...] <返回值类型> <函数名>(<参数列表>) => <语句>;
 ```
 
 因此，以下代码：
@@ -1763,12 +2046,65 @@ public int Add(int a, int b)
 public int Add(int a, int b) => a + b;
 ```
 
+#### 使用 Lambda 简化存取器声明
+
+Lambda 提供了一种简化存取器声明的方式。以 `get` 存取器为例，它的语法如下：
+
+```novasharp
+get => <语句>
+```
+
+因此，以下代码：
+
+```novasharp
+public class Person
+{
+    private int age;
+
+    public int Age
+    {
+        get
+        {
+            return age;
+        }
+
+        set
+        {
+            age = value;
+        }
+    }
+}
+```
+
+可以被简化为：
+
+```novasharp
+public class Person
+{
+    private int age;
+
+    public int Age
+    {
+        get => age;
+        set => age = value;
+    }
+}
+```
+
 #### Lambda 的返回值
 
 Lambda 表达式的返回值由表达式的结果决定。分两种情况：
 
 1. 如果 Lambda 表达式的 `=>` 符号后面是一条语句，则该语句的值就是返回值。
 2. 如果 Lambda 表达式的 `=>` 符号后面是一个代码块，则需要使用 `return` 语句显式指定返回值。
+
+### 等待与异步关键字
+
+NovaSharp 为标准库保留 `await` 和 `async` 关键字，用于支持异步编程。`await` 用于等待一个异步操作的完成，而 `async` 用于标记一个方法为异步方法。
+
+`await` 表达式的格式为：`await <表达式>`，其中的表达式必须返回一个 `IAwaitable<T>` 实例。换言之，`await` 将等待一个 `IAwaitable<T>` 实例。
+
+详细内容将在标准库中定义。
 
 ### 命名空间
 
@@ -1985,8 +2321,6 @@ public struct IndexUnit<TObject>
 
 引用本质上传递了一个索引单元。当引用作为变量的初始值时，它持有的就是该引用所传递的索引单元。
 
-NovaSharp 不允许循环引用的出现。
-
 #### 对指针的特殊处理
 
 指针类型的变量将绕过对象索引直接指向数据。因此禁止将引用传递给指针。
@@ -2048,7 +2382,7 @@ public int Main()
 3. 判断引用计数是否为 0，如果是，则回收索引单元及其对应的数据，否则保留索引单元及其对应的数据。
 4. 销毁变量。
 
-向对应的，`remove` 语句用于手动回收变量所对应的数据，并回收数据对应的索引单元。
+相对应的，`remove` 语句用于手动销毁变量并**强制回收**变量所对应的数据，并回收数据对应的索引单元。
 
 当执行 `remove` 语句时：
 
