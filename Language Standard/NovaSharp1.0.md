@@ -2395,3 +2395,40 @@ public int Main()
 ### 临时对象存储优化
 
 编译器可依据逃逸分析，将作用域局限在函数内的对象直接分配在栈上，无需索引单元。
+
+## 项目
+
+NovaSharp 将多份代码整合为一个项目，由项目配置文件在组织。
+
+项目配置文件是一个 JSON 格式的文件，其扩展名为 `.nsproj`，用于描述项目的基本信息和依赖关系。它被存储在**项目根目录**。
+
+配置字段表格如下：
+
+| 字段名         | 类型   | 必填 | 说明           |
+| -------------- | ------ | ---- | -------------- |
+| `project`      | string | 是   | 项目唯一标识符 |
+| `version`      | string | 否   | 语义化版本号   |
+| `dependencies` | list   | 否   | 依赖项         |
+
+以下是一个简单的项目配置文件示例：
+
+```json
+{
+  "project": "MyProject",
+  "version": "1.0.0",
+  "dependencies": ["../AnotherProject/AnotherProject.nsproj", "Standard"]
+}
+```
+
+### 依赖项
+
+项目配置文件中的 `dependencies` 字段用于指定项目的依赖项。
+
+依赖项可以是：
+
+1. 其他项目的相对路径，例如 `"../AnotherProject/AnotherProject.nsproj"`
+2. 标准库的名称，例如 `"Standard"`
+
+`dependencies` 字段中提到的所有依赖项均会被引入该项目配置文件所对应的项目中。此后允许在代码中访问依赖项的相关内容。
+
+依赖项将在编译阶段被解析和处理。
