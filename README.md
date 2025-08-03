@@ -12,4 +12,4 @@
 
 ## 语言标准
 
-- [NovaSharp 1.0](./Language-Standard/NovaSharp1.0.md)
+- [NovaSharp 1.0](/Language%20Standard/NovaSharp1.0.md)
