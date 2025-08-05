@@ -1,3 +1,5 @@
+![Logo](/Logo.svg)
+
 # NovaSharp
 
 一门不依赖于运行时的、同时支持面向对象与函数式范式的编程语言。
@@ -23,8 +25,8 @@
 经初步整理，NovaSharp 具有以下特色或优势：
 
 1. `require` 表达式与它所带来的更丰富、更实用的函数重载功能。（详见[语言标准 / 带条件的重载](/Standard/Language/NovaSharp1.0.md#带条件的重载)）
-2. 基于“对象索引”的内存模型与半自动内存管理与它所带来的无 GC、无运行时依赖的优势。（详见[语言标准 / 内存管理](/Standard/Language/NovaSharp1.0.md#内存管理)）
-3. 允许使用 `penetrated` 关键字使变量存储绕开对象索引机制的功能与它所带来的性能优化。（详见[语言标准 / `penetrated` 修饰符](/Standard/Language/NovaSharp1.0.md#penetrated-修饰符)）
+2. 基于“对象索引表”的内存模型与半自动内存管理与它所带来的无 GC、无运行时依赖的优势。（详见[语言标准 / 内存管理](/Standard/Language/NovaSharp1.0.md#内存管理)）
+3. 允许使用 `penetrated` 关键字使变量存储绕过对象索引表机制的功能与它所带来的性能优化。（详见[语言标准 / `penetrated` 修饰符](/Standard/Language/NovaSharp1.0.md#penetrated-修饰符)）
 
 ## 社区维护请求
 
