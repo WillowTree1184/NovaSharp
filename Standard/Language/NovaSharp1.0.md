@@ -2192,18 +2192,17 @@ namespace PersonData
 ```novasharp
 using Standard.*;
 
-namespace MyApplication
+public void Main()
 {
-    public static void Main()
-    {
-        Console.WriteLine("Hello, World!"); // 来自命名空间 Standard.IO 的 Console 类
-    }
+    Console.WriteLine("Hello, World!"); // 来自命名空间 Standard.IO 的 Console 类
 }
 ```
 
+NovaSharp 允许**在所有命名空间之外**定义函数、变量或对象，这些成员将**不属于任何命名空间**，并**可以在全局范围内被访问**。
+
 ### 异常处理
 
-当程序运行时发生错误或异常情况时，可以使用异常处理机制来捕获和处理这些异常。在 NovaSharp 中，异常处理使用 `try`、`catch` 和 `finally` 语句块来实现。其中，`finally` 块可以被省略。
+当程序运行时发生错误或异常情况时，可以使用异常处理机制来**捕获**和**处理**这些异常。在 NovaSharp 中，异常处理使用 `try`、`catch` 和 `finally` 语句块来实现。其中，`finally` 块可以被省略。
 
 异常处理的基本结构如下：
 
@@ -2222,38 +2221,35 @@ finally
 }
 ```
 
-在 `try` 块中放置可能引发异常的代码。如果发生异常，程序会立即跳转到对应的 `catch` 块进行处理。`finally` 块中的代码无论是否发生异常都会执行，通常用于释放资源或执行清理操作。
+在 `try` 块中放置**可能引发异常的代码**。如果发生异常，程序会**立即跳转**到对应的 `catch` 块进行处理。`finally` 块中的代码**无论是否发生异常都会执行**，通常用于释放资源或执行清理操作。
 
-异常类型是一专门用来处理异常信息的类。其中，`Exception` 是所有异常的基类，可以捕获所有类型的异常。
+异常类型是**一种专门用来处理异常信息**的**类**。其中，`Exception` 是所有异常的基类，可以用于捕获所有类型的异常。
 
 ```novasharp
-public class Program
+public void Main()
 {
-    public static void Main()
+    try
     {
-        try
-        {
-            int result = Divide(10, 0);
-            Console.WriteLine(result);
-        }
-        catch DivideByZeroException e
-        {
-            Console.WriteLine("Error: Division by zero is not allowed.");
-        }
-        catch Exception e // 通过堆叠 catch 块来处理不同类型的异常
-        {
-            Console.WriteLine("Error: Unknown exception occurred.");
-        }
-        finally
-        {
-            Console.WriteLine("Cleanup code can go here.");
-        }
+        int result = Divide(10, 0);
+        Console.WriteLine(result);
     }
+    catch DivideByZeroException e
+    {
+        Console.WriteLine("Error: Division by zero is not allowed.");
+    }
+    catch Exception e // 通过堆叠 catch 块来处理不同类型的异常
+    {
+        Console.WriteLine("Error: Unknown exception occurred.");
+    }
+    finally
+    {
+        Console.WriteLine("Cleanup code can go here.");
+    }
+}
 
-    public static int Divide(int a, int b)
-    {
-        return a / b;
-    }
+public static int Divide(int a, int b)
+{
+    return a / b;
 }
 ```
 
@@ -2324,6 +2320,22 @@ public class Exception
 | `NotImplementedException`            | 当方法尚未实现时引发。                                   |
 | `NoMatchingFunctionException`        | 当没有找到匹配的函数时引发。                             |
 | `InvalidIndexUnitReferenceException` | 当尝试访问的变量所持有的索引单元不存在或已被回收时引发。 |
+
+## 主函数
+
+在 NovaSharp 中，程序的执行入口是 `Main` 函数。每个 NovaSharp 程序必须包含一个 `Main` 函数，作为程序的起始点。
+
+`Main` 函数的基本结构如下：
+
+```novasharp
+public void Main()
+{
+    // 程序的入口点
+}
+```
+
+> [!IMPORTANT]
+> 请注意：`Main` 函数不应当属于任何对象或命名空间。
 
 ## 内存管理
 
