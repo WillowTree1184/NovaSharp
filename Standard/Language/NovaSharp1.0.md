@@ -1,5 +1,5 @@
 <!--
-Copyright 2025 WillowTree1184
+Copyright 2025 WillowTree1184 and contributors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ limitations under the License.
 
 # NovaSharp 1.0 语言标准
 
-NovaSharp 是一门不依赖于运行时的、同时支持面向对象与函数式范式的编程语言。
+NovaSharp 是一门不依赖于运行时的、支持面向对象与函数式范式的编程语言。
 
 ## 命名规范
 
@@ -1072,16 +1072,19 @@ double result2 = Add(5.5, 10.5); // 调用第二个 Add 函数，返回值为 16
 
 #### 带条件的重载
 
-若对于同名但参数列表不同的函数，希望根据特定条件来选择调用哪个函数，可以使用 `require` 语句来实现。使用`require` 语句的函数定义格式如下：
+若对于**同名、返回值类型相同且参数列表相同**的函数，希望**根据特定条件来选择调用哪个函数**，可以使用 `require` 语句来实现。使用`require` 语句的函数定义格式如下：
 
 ```novasharp
-[<修饰符1>, <修饰符2>, ...] <返回值类型> <函数名>(<参数列表>) require <条件1>[, <条件2>, <条件3>, ...]
+[<修饰符1>, <修饰符2>, ...] <返回值类型> <函数名>(<参数列表>) require <重载条件>
 {
     // 函数体
 }
 ```
 
-这些条件可以是任意的布尔表达式，用于限制函数的调用。每个条件之间由逗号隔开。只有当所有条件都满足时，才会调用该函数。
+> [!IMPORTANT]
+> NovaSharp **强制要求**这些**同名、返回值类型相同且参数列表相同**的函数**采用完全相同的修饰符**。
+
+`<重载条件>` 可以是**任意的布尔表达式**，用于限制函数的调用。只有当条件都满足时，才会调用该函数。
 
 例如：
 
@@ -1102,8 +1105,54 @@ void process(int type, int value)
 }
 ```
 
+以上述代码为例，**在运行时**，对 `process(int type, int value)` 的调用操作将按照该函数的声明顺序从上到下匹配函数，带条件的函数会被优先匹配。若没有匹配的函数，则会调用不带条件的函数。当没有定义不带条件的函数时，将会抛出 `NoMatchingFunctionException` 异常。
+
+本质上，以上代码是以下代码的语法糖：
+
+```novasharp
+// 该代码仅为示例，与实际编译期生成的代码在命名上可能有出入
+void process_require_type_equal_1(int type, int value)
+{
+    // 处理 type == 1 时的情况
+}
+
+void process_require_type_equal_2_and_value_less_5(int type, int value)
+{
+    // 处理 type == 2 且 value < 5 时的情况
+}
+
+void process_default(int type, int value)
+{
+    // 处理其它情况
+}
+
+// 该函数选择器在编译时生成
+// 调用process时，调用的是这个选择器
+void process(int type, int value)
+{
+    if type == 1
+    {
+        return process_require_type_equal_1(type, value);
+    }
+    else if type == 2 && value < 5
+    {
+        return process_require_type_equal_2_and_value_less_5(type, value);
+    }
+    else
+    {
+        return process_default(type, value);
+    }
+}
+```
+
 > [!TIP]
-> 以上述代码为例，**在运行时**，对 `process(int type, int value)` 的调用操作将按照该函数的声明顺序从上到下匹配函数，带条件的函数会被优先匹配。若没有匹配的函数，则会调用不带条件的函数。当没有定义不带条件的函数时，将会抛出 `NoMatchingFunctionException` 异常。
+> 以下内容为编译时可选项：
+>
+> - 是否优化条件重载
+>
+> 若开启，则在编译时，对**恒满足某一特定重载的重载条件**的调用，将会被优化为**直接调用该重载**，而**不再进行条件判断**。
+>
+> 该选项**默认开启**
 
 #### 引用值与输出值
 
@@ -1428,7 +1477,7 @@ public class Person
     [<修饰符1>, <修饰符2>, ...] <类型>[] <变量名> [= <初始值>]；
 
     // 方法
-    [<修饰符1>, <修饰符2>, ...] <返回值类型> <方法名>[<<泛型占位符列表>>](<参数列表>) [require <条件列表>]
+    [<修饰符1>, <修饰符2>, ...] <返回值类型> <方法名>[<<泛型占位符列表>>](<参数列表>) [require <重载条件>]
     {
         // 方法体
     }
@@ -1976,14 +2025,14 @@ public class Repository<T, U> where T is Entity，U is IComparable
 }
 ```
 
-对于函数而言，`where` 关键字还可以与 `requires` 关键字结合使用，以指定更复杂的约束条件。
+对于函数而言，`where` 关键字还可以与 `require` 关键字结合使用，以指定更复杂的约束条件。
 
 以如下代码为例，可读性角度出发，我们建议你采取这样的格式：
 
 ```novasharp
 public T SetEntityData<T>(T target, string name)
     where T is Entity
-    require name != null, name.Length > 0
+    require name != null && name.Length > 0
 {
     target.Name = name;
     target.UpdatedAt = DateTime.Now;
@@ -2293,19 +2342,6 @@ public class Exception
 }
 ```
 
-### `penetrated` 修饰符
-
-`penetrated` 修饰符用于指示变量或临时变量绕过对象索引表机制，直接存储到内存中。也算是 NovaSharp 的一大特色。
-
-有关对象索引表机制的内容，详见[对象索引表与索引单元](#对象索引表与索引单元)。
-
-当一个变量被声明 `penetrated` 时，它将绕过对象索引表机制，直接存储到内存中。这意味着对该变量的访问将不再通过索引单元，而是直接访问其在内存中的位置。
-
-声明了 `penetrated` 的变量**无法被引用**。原理详见[引用](#引用)。
-
-> [!IMPORTANT]
-> 修饰符 `penetrated` 仅适用于变量或临时变量，不能用于类、结构体、接口的成员。且**必须被显式声明**。
-
 #### 内置的异常类型
 
 在 NovaSharp 中，内置的异常类型主要包括以下几种：
@@ -2321,6 +2357,67 @@ public class Exception
 | `NoMatchingFunctionException`        | 当没有找到匹配的函数时引发。                             |
 | `InvalidIndexUnitReferenceException` | 当尝试访问的变量所持有的索引单元不存在或已被回收时引发。 |
 
+### `penetrated` 修饰符
+
+`penetrated` 修饰符用于指示变量或临时变量绕过对象索引表机制，直接存储到内存中。也算是 NovaSharp 的一大特色。
+
+有关对象索引表机制的内容，详见[对象索引表与索引单元](#对象索引表与索引单元)。
+
+当一个变量被声明 `penetrated` 时，它将绕过对象索引表机制，直接存储到内存中。这意味着对该变量的访问将不再通过索引单元，而是直接访问其在内存中的位置。
+
+声明了 `penetrated` 的变量**无法被引用**。原理详见[引用](#引用)。
+
+> [!IMPORTANT]
+> 修饰符 `penetrated` 仅适用于变量或临时变量，不能用于类、结构体、接口的成员。且**必须被显式声明**。
+
+### 编译器指令
+
+NovaSharp 提供了一些编译器指令，用于控制编译过程中的行为。这些指令以 `#` 开头，通常放置在文件的顶部。
+
+以下是 NovaSharp 支持的编译器指令：
+
+| 指令      | 描述                                                                                  |
+| --------- | ------------------------------------------------------------------------------------- |
+| `#define` | 定义一个符号，可以在代码中使用 `#if`、`#elif`、`#else` 和 `#endif` 指令进行条件编译。 |
+| `#undef`  | 取消定义一个符号。                                                                    |
+| `#if`     | 开始一个条件编译块，只有在定义了指定的符号时，块中的代码才会被编译。                  |
+| `#elif`   | 在 `#if` 块中添加一个新的条件。                                                       |
+| `#else`   | 在 `#if` 块中添加一个默认的条件。                                                     |
+| `#endif`  | 结束一个条件编译块。                                                                  |
+
+所有的编译器指令仅在当前文件中生效，且效果仅作用于该指令之后的每一行。
+
+例如以下代码：
+
+```novasharp
+using Standard.*
+
+// 定义了Debug
+#define DEBUG
+
+public int Main()
+{
+    #if DEBUG
+    // 如果定义了 DEBUG，执行以下代码
+    Console.WriteLine("Debug mode is enabled."); // 由于定义了 DEBUG，此时被编译并执行，输出
+    #else
+    // 如果未定义 DEBUG，执行以下代码
+    Console.WriteLine("Debug mode is disabled."); // 此时不会被编译并执行，不会输出
+    #endif
+
+    // 取消定义 DEBUG，影响后面的所有代码
+    #undef DEBUG
+
+    #if DEBUG
+    // 如果定义了 DEBUG，执行以下代码
+    Console.WriteLine("Debug mode is enabled."); // 此时不会被编译并执行，不会输出
+    #else
+    // 如果未定义 DEBUG，执行以下代码
+    Console.WriteLine("Debug mode is disabled."); // 由于 DEBUG 被取消定义，此时被编译并执行，输出
+    #endif
+}
+```
+
 ## 主函数
 
 在 NovaSharp 中，程序的执行入口是 `Main` 函数。每个 NovaSharp 程序必须包含一个 `Main` 函数，作为程序的起始点。
@@ -2328,14 +2425,17 @@ public class Exception
 `Main` 函数的基本结构如下：
 
 ```novasharp
-public void Main()
+public int Main()
 {
     // 程序的入口点
+    return 0;
 }
 ```
 
 > [!IMPORTANT]
 > 请注意：`Main` 函数不应当属于任何对象或命名空间。
+
+主函数的 `return 0;` 表示程序正常结束，可以省略，编译期自动补上。
 
 ## 内存管理
 
