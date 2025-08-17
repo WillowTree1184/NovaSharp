@@ -698,6 +698,8 @@ public struct IndexUnit<TObject>
 }
 ```
 
+指针不能被 `penetrated` 修饰符修饰。原理详见 [`penetrated` 修饰符](#penetrated-修饰符)一节。
+
 ### 引用
 
 引用是指向变量的别名，是指针的替代品，可以通过引用直接访问和修改变量的值。引用在函数参数传递时非常有用，可以避免复制大对象的开销。详见[内存管理](#内存管理)一节。
@@ -1166,6 +1168,12 @@ void process(int type, int value)
 void UpdateValue(ref int value)
 {
     value += 10;
+}
+
+int Main()
+{
+    int x = 0;
+    UpdateValue(x); // 此时传递x，注意，调用时不需要声明 ref
 }
 ```
 
@@ -2229,6 +2237,7 @@ namespace PersonData
         }
     }
 
+    // 与 C# 不同，NovaSharp 允许函数出现在类、结构体、接口等的外部，被直接包含到命名空间中
     public void PrintPersonData(Person person)
     {
         Console.WriteLine($"Name: {person.Name}, Age: {person.Age}");
