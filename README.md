@@ -99,6 +99,13 @@ Ubuntu 系统用户可以使用以下命令安装它们：
 sudo apt-get install flex bison llvm-17
 ```
 
+欲构建 NovaSharp 编译器，请：
+
+```bash
+# cd ./Compiler
+make build
+```
+
 ## 开源许可证
 
 本项目采用 Apache License 2.0 许可证进行开源。详细信息请参阅 [LICENSE](LICENSE) 文件。
