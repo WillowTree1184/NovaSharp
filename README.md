@@ -84,6 +84,21 @@
   - [ ] 目标代码生成
   - [ ] 功能补全与测试
 
+## 编译器
+
+开发编译器需要以下工具、依赖或库：
+
+- Make
+- Flex
+- Bison
+- llvm-17
+
+Ubuntu 系统用户可以使用以下命令安装它们：
+
+```bash
+sudo apt-get install flex bison llvm-17
+```
+
 ## 开源许可证
 
 本项目采用 Apache License 2.0 许可证进行开源。详细信息请参阅 [LICENSE](LICENSE) 文件。
