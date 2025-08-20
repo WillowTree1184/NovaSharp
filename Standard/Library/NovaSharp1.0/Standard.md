@@ -85,6 +85,37 @@ NovaSharp 的 IO 流模块支持多种类型的流，包括：
 
 开发者可以根据需要选择合适的流类型，以实现高效的数据读写操作。
 
+### 命令行 IO 流 `Console`
+
+NovaSharp 的命令行 IO 流模块提供了一系列用于与命令行交互的类和方法，旨在简化程序中的命令行输入输出操作。
+
+```novasharp
+namespace Standard.IO
+{
+    public static class Console
+    {
+        // 写入文本
+        // message: 要写入的文本
+        public static void Write(string message);
+
+        // 写入一行文本
+        // 写入时，会在 message 后添加换行符
+        // message: 要写入的文本
+        public static void WriteLine(string message);
+
+        // 读取一个字符
+        public static char ReadChar();
+
+        // 读取文本
+        // 读取至空格、制表符、换行符或文件结尾
+        public static string Read();
+
+        // 读取一行文本
+        public static string ReadLine();
+    }
+}
+```
+
 ### 文件操作 `Standard.IO.File`
 
 NovaSharp 的文件操作模块提供了一系列用于文件读写的类和方法，旨在简化程序中的文件操作。
@@ -183,6 +214,20 @@ namespace Standard.IO.File
 
         // 指示当前文件流是否可写
         public override bool CanWrite { get; }
+
+        // 构造函数
+        // 用于打开一个文件流
+        // path: 文件路径
+        // mode: 文件访问模式
+        // access: 文件访问权限
+        // share: 文件共享模式
+        public FileStream(string path, FileMode mode = FileMode.OpenOrCreate, FileAccess access = FileAccess.ReadWrite, FileShare share = FileShare.None);
+
+        // 析构函数
+        public ~FileStream()
+        {
+            Close();
+        }
 
         // 从文件流中读取数据
         // buffer: 数据缓冲区
