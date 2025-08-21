@@ -2451,7 +2451,7 @@ public int Main()
 `Main` 函数的基本结构如下：
 
 ```novasharp
-public int Main()
+int Main()
 {
     // 程序的入口点
     return 0;
