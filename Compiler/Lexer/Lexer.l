@@ -15,7 +15,8 @@ limitations under the License.
 */
 
 %{
-#include <string>
+//#include <io.h>  //测试需要
+//#include <string>  //C语言不能用 string 哦喵~~
 #include "../Parser/Parser.tab.hh"
 
 #define YY_NO_UNISTD_H
@@ -23,7 +24,7 @@ limitations under the License.
 extern int yylineno;    // Current line number.
 extern char* yytext;    // Current text.
 
-void yyerror(string *message);  // Process error.
+void yyerror(const char *message);  // Process error.
 %}
 
 %option noyywrap
@@ -37,46 +38,58 @@ void yyerror(string *message);  // Process error.
 %x RICH_STRING
 
 DIGIT   [0-9]
-ID      [a-zA-Z_][a-zA-Z_0-9\]*
+
+INTEGER   [+-]?[0-9]+
+HEX    [+-]?0[xX][0-9a-fA-F]+
+OCT    [+-]?0[oO][0-7]+
+BIN    [+-]?0[bB][01]+
+FLOAT  [-+]?([0-9]+(\.[0-9]+)?|\.[0-9]+)([eE][0-9]+)?  //手写长难句草
+
+ID     [a-zA-Z_][a-zA-Z_0-9]*
 
 %%
+{INTEGER}           {return INTEGER;}
+{HEX}               {return INTEGER;}
+{OCT}               {return INTEGER;}
+{BIN}               {return INTEGER;}
+[-+]?([0-9]+(\.[0-9]+)?|\.[0-9]+)([eE][0-9]+)? {return FLOAT_NUMBER;}  //不知道为什么,总之{FLOAT}就是不行
 
 "//"                { BEGIN(SHORT_COMMENT); }
-<SHORT_COMMENT>\n   { BEGIN(INITIAL); yylineno ++; }
+<SHORT_COMMENT>\n   { BEGIN(INITIAL); }
 <SHORT_COMMENT>.    { }
 
 "/*"                { BEGIN(LONG_COMMENT); }
-LONG_COMMENT"*/"    { BEGIN(INITIAL); }
+<LONG_COMMENT>"*/"    { BEGIN(INITIAL); }
 <LONG_COMMENT>.     { }
-<LONG_COMMENT>\n    { yylineno ++; }
+<LONG_COMMENT>\n    { }
 
 \"\"\"              { BEGIN(RICH_STRING); return RICH_STRING_LITERAL; }
 <RICH_STRING>\"\"\" { BEGIN(INITIAL); }
 <RICH_STRING>\\.    { }
-<RICH_STRING>\n     { yylineno++; }
+<RICH_STRING>\n     { }  //有自动换行了
 <RICH_STRING>.      { }
 
 \"                  { BEGIN(STRING); }
 <STRING>\"          { BEGIN(INITIAL); }
-<STRING>\n          { yyerror("Unterminated string constant"); yylineno++; BEGIN(INITIAL); }
+<STRING>\n          { yyerror("Unterminated string constant"); BEGIN(INITIAL); }
 <STRING>.           { }
 
-"ushort"            { return USHORT }
-"short"             { return SHORT }
-"uint"              { return UINT }
-"int"               { return INT }
-"ulong"             { return ULONG }
-"long"              { return LONG }
-"float"             { return FLOAT }
-"double"            { return DOUBLE }
-"char"              { return CHAR }
-"string"            { return STRING }
-"bool"              { return BOOL }
-"object"            { return OBJECT }
-"void"              { return VOID }
-"var"               { return VAR }
+"ushort"            { return USHORT; }
+"short"             { return SHORT; }
+"uint"              { return UINT; }
+"int"               { return INT; }
+"ulong"             { return ULONG; }
+"long"              { return LONG; }
+"float"             { return FLOAT; }
+"double"            { return DOUBLE; }
+"char"              { return CHAR; }
+"string"            { return STRING; }
+"bool"              { return BOOL; }
+"object"            { return OBJECT; }
+"void"              { return VOID; }
+"var"               { return VAR; }
 
-"new"               { return NEW }
+"new"               { return NEW; }
 
 "public"            { return PUBLIC; }
 "private"           { return PRIVATE; }
@@ -130,7 +143,7 @@ LONG_COMMENT"*/"    { BEGIN(INITIAL); }
 "!"                 { return LOGIC_NOT; }
 
 "&"                 { return BITWISE_AND; }
-"|"                 { return BITWISE_OR; }
+"|"                 { return BITWISE_OR; }  //与123行重合,爆warning
 "^"                 { return BITWISE_XOR; }
 "<<"                { return SHIFT_LEFT; }
 ">>"                { return SHIFT_RIGHT; }
@@ -195,4 +208,7 @@ LONG_COMMENT"*/"    { BEGIN(INITIAL); }
 "finally"           { return FINALLY; }
 "throw"             { return THROW; }
 
+[ \t\r\n]+          { }
+
+.+                  { yyerror("Unknown character in your project."); }
 %%
