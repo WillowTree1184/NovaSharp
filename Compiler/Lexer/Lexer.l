@@ -17,7 +17,6 @@ limitations under the License.
 %{
 #define YYSTYPE char *
 #include <stdio.h>
-//#include <string>  //打注释是因为我的环境不能用 C++ 进行编译
 #include "../Parser/Parser.tab.h"
 
 #define YY_NO_UNISTD_H
@@ -44,7 +43,7 @@ INTEGER   [+-]?[0-9]+
 HEX    [+-]?0[xX][0-9a-fA-F]+
 OCT    [+-]?0[oO][0-7]+
 BIN    [+-]?0[bB][01]+
-FLOAT  [-+]?([0-9]+(\.[0-9]+)?|\.[0-9]+)([eE][0-9]+)  //手写长难句草
+FLOAT  [-+]?(?:(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)    // By DeepSeek，原来的版本是 InterAsiree 的 [-+]?([0-9]+(\.[0-9]+)?|\.[0-9]+)([eE][0-9]+)? ，暂时不清楚哪个更优。
 
 ID     [^\d+\-*/%^=&|!~.(){}[\]<>\\:;,?"' \t\r\n]+[^+\-*/%^=&|!~.(){}[\]<>\\:;,?"' \t\r\n]*
 
@@ -53,21 +52,24 @@ ID     [^\d+\-*/%^=&|!~.(){}[\]<>\\:;,?"' \t\r\n]+[^+\-*/%^=&|!~.(){}[\]<>\\:;,?
 {HEX}               { yylval = strdup(yytext); return INTEGER; }
 {OCT}               { yylval = strdup(yytext); return INTEGER; }
 {BIN}               { yylval = strdup(yytext); return INTEGER; }
-[-+]?([0-9]+(\.[0-9]+)?|\.[0-9]+)([eE][0-9]+)? { yylval = strdup(yytext); return FLOAT_NUMBER; }  //不知道为什么,总之{FLOAT}就是不行
+{FLOAT}             { yylval = strdup(yytext); return FLOAT_NUMBER; }   // 似乎 {FLOAT} 不行? （摘自 InterAsiree 的提交）
 
 "//"                { BEGIN(SHORT_COMMENT); }
 <SHORT_COMMENT>\n   { BEGIN(INITIAL); }
 <SHORT_COMMENT>.    { }
+
 "/*"                { BEGIN(LONG_COMMENT); }
 <LONG_COMMENT>"*/"  { BEGIN(INITIAL); }
 <LONG_COMMENT>.     { }
 <LONG_COMMENT>\n    { }
+
 \"\"\"              { BEGIN(RICH_STRING); return RICH_STRING_LITERAL; }
 <RICH_STRING>\"\"\" { BEGIN(INITIAL); }
 <RICH_STRING>\\.    { }
-<RICH_STRING>\n     { }  //有自动换行了
+<RICH_STRING>\n     { }
 <RICH_STRING>.      { }
-\"                  { BEGIN(STRING); return STRING_LITERAL; }  //是不是少了什么?
+
+\"                  { BEGIN(STRING); return STRING_LITERAL; }
 <STRING>\"          { BEGIN(INITIAL); }
 <STRING>\n          { yyerror("Unterminated string constant"); BEGIN(INITIAL); }
 <STRING>.           { }
@@ -119,9 +121,9 @@ ID     [^\d+\-*/%^=&|!~.(){}[\]<>\\:;,?"' \t\r\n]+[^+\-*/%^=&|!~.(){}[\]<>\\:;,?
 "&&="               { return LOGIC_AND_ASSIGN; }
 "||="               { return LOGIC_OR_ASSIGN; }
 "&="                { return BITWISE_AND_ASSIGN; }
-"|="                { return BITWISE_OR_ASSIGN; }  //看了好久,原来你少写了一个等号
+"|="                { return BITWISE_OR_ASSIGN; }
 "^="                { return BITWISE_XOR_ASSIGN; }
-"~"                 { return BITWISE_NOT_ASSIGN; }  //等号给你去了,它是一元运算符(或许吧)
+"~="                { return BITWISE_NOT_ASSIGN; }
 "<<="               { return SHIFT_LEFT_ASSIGN; }
 ">>="               { return SHIFT_RIGHT_ASSIGN; }
 
@@ -141,7 +143,7 @@ ID     [^\d+\-*/%^=&|!~.(){}[\]<>\\:;,?"' \t\r\n]+[^+\-*/%^=&|!~.(){}[\]<>\\:;,?
 "!"                 { return LOGIC_NOT; }
 
 "&"                 { return BITWISE_AND; }
-"|"                 { return BITWISE_OR; }  //[以前的版本]与123行重合,爆warning
+"|"                 { return BITWISE_OR; }
 "^"                 { return BITWISE_XOR; }
 "<<"                { return SHIFT_LEFT; }
 ">>"                { return SHIFT_RIGHT; }
@@ -208,7 +210,7 @@ ID     [^\d+\-*/%^=&|!~.(){}[\]<>\\:;,?"' \t\r\n]+[^+\-*/%^=&|!~.(){}[\]<>\\:;,?
 
 [ \t\r\n]+          { }
 {ID}                { yylval = strdup(yytext); return ID; }
-.+                  { yyerror("Unknown character in your project."); }
+.+                  { yyerror("Unknown character."); }
 
 %%
 
