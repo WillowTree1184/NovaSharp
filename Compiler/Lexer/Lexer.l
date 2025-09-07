@@ -16,7 +16,6 @@ limitations under the License.
 
 %{
 #define YYSTYPE char *
-#include <stdio.h>
 #include "../Parser/Parser.tab.h"
 
 #define YY_NO_UNISTD_H
@@ -37,13 +36,11 @@ void yyerror(const char *message);  // Process error.
 %x STRING
 %x RICH_STRING
 
-DIGIT   [0-9]
-
 INTEGER   [+-]?[0-9]+
 HEX    [+-]?0[xX][0-9a-fA-F]+
 OCT    [+-]?0[oO][0-7]+
 BIN    [+-]?0[bB][01]+
-FLOAT  [-+]?(?:(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)    // By DeepSeek，原来的版本是 InterAsiree 的 [-+]?([0-9]+(\.[0-9]+)?|\.[0-9]+)([eE][0-9]+)? ，暂时不清楚哪个更优。
+FLOAT  [-+]?(?:(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)
 
 ID     [^\d+\-*/%^=&|!~.(){}[\]<>\\:;,?"' \t\r\n]+[^+\-*/%^=&|!~.(){}[\]<>\\:;,?"' \t\r\n]*
 
@@ -52,7 +49,7 @@ ID     [^\d+\-*/%^=&|!~.(){}[\]<>\\:;,?"' \t\r\n]+[^+\-*/%^=&|!~.(){}[\]<>\\:;,?
 {HEX}               { yylval = strdup(yytext); return INTEGER; }
 {OCT}               { yylval = strdup(yytext); return INTEGER; }
 {BIN}               { yylval = strdup(yytext); return INTEGER; }
-{FLOAT}             { yylval = strdup(yytext); return FLOAT_NUMBER; }   // 似乎 {FLOAT} 不行? （摘自 InterAsiree 的提交）
+{FLOAT}             { yylval = strdup(yytext); return FLOAT_NUMBER; }
 
 "//"                { BEGIN(SHORT_COMMENT); }
 <SHORT_COMMENT>\n   { BEGIN(INITIAL); }
@@ -74,6 +71,9 @@ ID     [^\d+\-*/%^=&|!~.(){}[\]<>\\:;,?"' \t\r\n]+[^+\-*/%^=&|!~.(){}[\]<>\\:;,?
 <STRING>\n          { yyerror("Unterminated string constant"); BEGIN(INITIAL); }
 <STRING>.           { }
 
+"ubyte"             { return UBYTE; }
+"byte"              { return BYTE; }
+"char"              { return BYTE; }  // 单字节,算是byte的别名
 "ushort"            { return USHORT; }
 "short"             { return SHORT; }
 "uint"              { return UINT; }
@@ -82,7 +82,7 @@ ID     [^\d+\-*/%^=&|!~.(){}[\]<>\\:;,?"' \t\r\n]+[^+\-*/%^=&|!~.(){}[\]<>\\:;,?
 "long"              { return LONG; }
 "float"             { return FLOAT; }
 "double"            { return DOUBLE; }
-"char"              { return CHAR; }
+"rune"              { return RUNE; }  // 双字节,UTF-16编码
 "string"            { return STRING; }
 "bool"              { return BOOL; }
 "object"            { return OBJECT; }
@@ -90,6 +90,9 @@ ID     [^\d+\-*/%^=&|!~.(){}[\]<>\\:;,?"' \t\r\n]+[^+\-*/%^=&|!~.(){}[\]<>\\:;,?
 
 "var"               { return VAR; }
 "new"               { return NEW; }
+"true"              { return BOOL_TRUE; }
+"false"             { return BOOL_FALSE; }
+"null"              { return VALUE_NULL; }
 
 "public"            { return PUBLIC; }
 "private"           { return PRIVATE; }
@@ -218,3 +221,4 @@ void yyerror(const char *msg) {
     printf("Error at line %d:\n\t%s\n", yylineno, msg);
     exit(1);
 }
+
