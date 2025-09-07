@@ -215,6 +215,7 @@ ID     [^\d+\-*/%^=&|!~.(){}[\]<>\\:;,?"' \t\r\n]+[^+\-*/%^=&|!~.(){}[\]<>\\:;,?
 {ID}                { yylval = strdup(yytext); return ID; }
 .+                  { yyerror("Unknown character."); }
 
+<<EOF>>             { return EOF; }
 %%
 
 void yyerror(const char *msg) {
