@@ -116,6 +116,24 @@ namespace Standard.IO
 }
 ```
 
+`Console` 拥有以下属性和方法:
+
+#### 属性
+|属性名|描述|变量类型|可用值|默认值|
+|-|-|-|-|-|
+|`InputEncoding`|输入编码|`string`|所有支持的编码|UTF-8|
+|`OutputEncoding`|输出编码|`string`|所有支持的编码|UTF-8|
+|`AutoEnter`|使用输出语句时,是否自动回车|`bool`|true/false|true|
+
+#### 方法
+|方法名|描述|参数列表|返回值|
+|-|-|-|-|
+|`Write`|写入文本|`string message`|无|
+|`WriteLine`|写入一行文本|`string message`|无|
+|`ReadChar`|读取一个字符|无|`char`|
+|`Read`|读取文本|无|`string`|
+|`ReadLine`|读取一行文本|无|`string`|
+
 ### 文件操作 `Standard.IO.File`
 
 NovaSharp 的文件操作模块提供了一系列用于文件读写的类和方法，旨在简化程序中的文件操作。
